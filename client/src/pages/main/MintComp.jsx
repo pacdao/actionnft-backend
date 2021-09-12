@@ -94,6 +94,8 @@ const MintComp = ({
 }) => {
   const classes = useStyles();
   const { account, signer } = useEthersProvider();
+  console.log("Hi");
+  console.log(mintPrice);
 
   const [state, dispatch] = React.useReducer(stateReducer, {
     status: null,

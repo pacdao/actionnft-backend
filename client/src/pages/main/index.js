@@ -96,9 +96,10 @@ const Main = () => {
 
   const getMinPrice = async () => {
     try {
-      const the_abi = await abi;
-      const contract = new ethers.Contract(address, the_abi.abi, provider);
-      const minPrice = await contract.totalSupply();
+      console.log("Getting min price");
+      const _abi = await abi;
+      const contract = new ethers.Contract(address, _abi.abi, provider);
+      const minPrice = await contract.commonPrice();
       const parsedMinPrice = minPrice.toString();
       return formatUnits(parsedMinPrice, 18);
     } catch (error) {
@@ -109,7 +110,8 @@ const Main = () => {
 
   const getTotalMinted = async () => {
     try {
-      const contract = new ethers.Contract(address, abi, provider);
+      const _abi = await abi;
+      const contract = new ethers.Contract(address, _abi, provider);
       const totalSupply = await contract.totalSupply();
       const parsedTotalSupply = totalSupply.toString();
       return parsedTotalSupply;
@@ -123,6 +125,8 @@ const Main = () => {
     (async () => {
       try {
         const currentMintedPrice = await getMinPrice();
+	console.log("Got it");
+	console.log(currentMintedPrice);
         const totalMintedSupply = await getTotalMinted();
         dispatch({
           type: TYPE.success,
