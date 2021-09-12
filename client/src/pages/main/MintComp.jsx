@@ -118,8 +118,9 @@ const MintComp = ({
       }
       const eth = parseUnits(formMintPrice, "ether");
       const wei = formatUnits(eth, "wei");
-      const contract = new ethers.Contract(address, abi, signer);
-      const txResp = await contract.mint({
+      const _abi = await abi;
+      const contract = new ethers.Contract(address, _abi.abi, signer);
+      const txResp = await contract.mint_common({
         value: wei.toString(),
       });
       dispatch({ type: TYPE.pending });
