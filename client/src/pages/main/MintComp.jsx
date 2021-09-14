@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { makeStyles } from "@material-ui/styles";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
+import Grow from "@material-ui/core/Grow";
 
 import { TYPE } from "utils";
 import ProgressBtn from "components/ProgressBtn";
@@ -10,10 +11,15 @@ import { useEthersProvider } from "contexts/EthersContext";
 //import PACFounderContract from "contracts/PACFounderContract";
 import { formatUnits, parseUnits } from "ethers/lib/utils";
 import Alert from "@material-ui/lab/Alert";
-import { Grid } from "@material-ui/core";
+import { Grid, Tab, Tabs } from "@material-ui/core";
 import contractMap from "artifacts/deployments/map.json";
+import { TabContext, TabPanel } from "@material-ui/lab";
+import pacImage from "assets/pacanim.gif";
 
 const useStyles = makeStyles(() => ({
+  img: {
+    height: "calc(100vh - 55vh)",
+  },
   textfield: {
     "& .MuiOutlinedInput-root": {
       borderTopRightRadius: 0,
@@ -49,52 +55,50 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-function stateReducer(state, action) {
-  switch (action.type) {
+function stateReducer(state, { type, payload }) {
+  switch (type) {
     case TYPE.pending: {
       return {
         ...state,
+        ...payload,
         status: TYPE.pending,
-        txReceiptHash: null,
       };
     }
     case TYPE.success: {
       return {
         ...state,
+        ...payload,
         status: TYPE.success,
-        blockHash: action.blockHash,
       };
     }
     case TYPE.error: {
       return {
         ...state,
+        error: payload.error,
         status: TYPE.error,
-        error: action.error,
       };
     }
     default: {
-      throw new Error(`Unhandled action type: ${action.type}`);
+      throw new Error(`Unhandled action type: ${type}`);
     }
   }
 }
 
-const address = contractMap['dev']['ActionNFT'][0]; 
+const address = contractMap["dev"]["ActionNFT"][0];
 const abi = getABI(address);
 
 async function getABI(address) {
-	const resp =await import(`artifacts/deployments/dev/${address}.json`);
-	return resp
+  const resp = await import(`artifacts/deployments/dev/${address}.json`);
+  return resp;
 }
 const MintComp = ({
-  priceDispatch,
   formCommonPrice,
   formRarePrice,
   mintPrice,
-  getCommonPrice,
   totalSupply,
+  dispatch: priceDispatch,
+  getCommonPrice,
 }) => {
-  console.log("Loaded", formRarePrice, mintPrice, formCommonPrice);
-
   const classes = useStyles();
   const { account, signer } = useEthersProvider();
 
@@ -102,14 +106,17 @@ const MintComp = ({
     status: null,
     error: null,
     blockHash: null,
+    tabValue: 0,
   });
 
   function handleChange(evt) {
     const { value } = evt.target;
     priceDispatch({
       type: TYPE.success,
-      mintPrice: mintPrice,
-      formCommonPrice: value,
+      payload: {
+        mintPrice: mintPrice,
+        formCommonPrice: value,
+      },
     });
   }
 
@@ -131,14 +138,18 @@ const MintComp = ({
       const updatedMintPrice = await getCommonPrice();
       priceDispatch({
         type: TYPE.success,
-        mintPrice: updatedMintPrice,
-        formCommonPrice: updatedMintPrice,
+        payload: {
+          mintPrice: updatedMintPrice,
+          formCommonPrice: updatedMintPrice,
+        },
       });
-      dispatch({ type: TYPE.success, blockHash });
+      dispatch({ type: TYPE.success, payload: { blockHash } });
     } catch (error) {
       dispatch({
         type: TYPE.error,
-        error: error.message || "Somethings wrong",
+        payload: {
+          error: error.message || "Somethings wrong",
+        },
       });
     }
   }
@@ -179,114 +190,182 @@ const MintComp = ({
         </Grid>
       </Grid>
 
-<h1>COMMON</h1>
-
-      <Grid item xs={12}>
-        <Grid container justifyContent="center" alignItems="stretch">
-          <TextField
-            className={classes.textfield}
-            label="Your ETH amount"
-            variant="outlined"
-            onChange={handleChange}
-            disabled={!account}
-            value={formCommonPrice}
-          />
-          <ProgressBtn
-            className={classes.mintBtn}
-            variant="contained"
-            color="primary"
-            size="large"
-            loading={state.status === TYPE.pending}
-            handleClick={pay}
-            disabled={!account || state.status === TYPE.pending}
-            type="submit"
+      <Grid container>
+        <TabContext value={state.tabValue}>
+          <Grid
+            item
+            xs={12}
+            container
+            justifyContent="center"
+            alignItems="stretch"
           >
-            Mint
-          </ProgressBtn>
-        </Grid>
-      </Grid>
-      <Grid item container xs={12} justifyContent="center">
-        <Grid
-          item
-          md={6}
-          xs={12}
-          container
-          direction="column"
-          justifyContent="center"
-          alignItems="center"
-        >
-          <Typography display="block" style={{ margin: "1rem 0" }} gutterBottom>
-            Minimum amount to mint NFT <b>{mintPrice} ETH</b>*
-            <br />
-            Total minted so far <b>{totalSupply}</b>
-          </Typography>
+            <Tabs
+              centered
+              indicatorColor="primary"
+              value={state.tabValue}
+              onChange={(evt, newTabValue) => {
+                dispatch({
+                  type: TYPE.success,
+                  payload: {
+                    tabValue: newTabValue,
+                  },
+                });
+              }}
+              aria-label="mint tabs"
+            >
+              <Tab label="Common" />
+              <Tab label="Rare" />
+            </Tabs>
+          </Grid>
+          <Grid item xs={12}>
+            <TabPanel value={0} index={0}>
+              <Grid item xs={12} container justifyContent="center">
+                <Grow
+                  in
+                  disableStrictModeCompat
+                  style={{ transformOrigin: "0 0 0 0" }}
+                  timeout={1000}
+                >
+                  <img
+                    className={classes.img}
+                    alt="PAC Crypto Activism NFT"
+                    src={pacImage}
+                    //src="https://pbs.twimg.com/media/E91wIcSXsAI3syG.jpg:large" //{spinny}
+                  />
+                </Grow>
+              </Grid>
+              <Grid item xs={12}>
+                <Grid container justifyContent="center" alignItems="stretch">
+                  <TextField
+                    className={classes.textfield}
+                    label="Your ETH amount"
+                    variant="outlined"
+                    onChange={handleChange}
+                    disabled={!account}
+                    value={formCommonPrice}
+                  />
+                  <ProgressBtn
+                    className={classes.mintBtn}
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    loading={state.status === TYPE.pending}
+                    handleClick={pay}
+                    disabled={!account || state.status === TYPE.pending}
+                    type="submit"
+                  >
+                    Mint
+                  </ProgressBtn>
+                </Grid>
+              </Grid>
+              <Grid item container xs={12} justifyContent="center">
+                <Grid
+                  item
+                  md={6}
+                  xs={12}
+                  container
+                  direction="column"
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Typography
+                    display="block"
+                    style={{ margin: "1rem 0" }}
+                    gutterBottom
+                  >
+                    Minimum amount to mint NFT <b>{mintPrice} ETH</b>*
+                    <br />
+                    Total minted so far <b>{totalSupply}</b>
+                  </Typography>
 
-          <Typography
-            display="block"
-            variant="caption"
-            style={{ maxWidth: "70%" }}
-          >
-            *You can mint at, or above, the current minimum amount ({mintPrice}{" "}
-            ETH). The new minimum is always set to be higher than the previous
-            mint price. A whale could set a high floor at any point they like,
-            so mint early!
-          </Typography>
-        </Grid>
-      </Grid>
+                  <Typography
+                    display="block"
+                    variant="caption"
+                    style={{ maxWidth: "70%" }}
+                  >
+                    *You can mint at, or above, the current minimum amount (
+                    {mintPrice} ETH). The new minimum is always set to be higher
+                    than the previous mint price. A whale could set a high floor
+                    at any point they like, so mint early!
+                  </Typography>
+                </Grid>
+              </Grid>
+            </TabPanel>
+            <TabPanel value={1} index={1}>
+              <Grid item xs={12} container justifyContent="center">
+                <Grow
+                  in
+                  disableStrictModeCompat
+                  style={{ transformOrigin: "0 0 0 0" }}
+                  timeout={1000}
+                >
+                  <img
+                    className={classes.img}
+                    alt="PAC Crypto Activism NFT"
+                    src={pacImage}
+                    //src="https://pbs.twimg.com/media/E91wIcSXsAI3syG.jpg:large" //{spinny}
+                  />
+                </Grow>
+              </Grid>
+              <Grid item xs={12}>
+                <Grid container justifyContent="center" alignItems="stretch">
+                  <TextField
+                    className={classes.textfield}
+                    label="Your ETH amount"
+                    variant="outlined"
+                    onChange={handleChange}
+                    disabled={!account}
+                    value={formRarePrice}
+                  />
+                  <ProgressBtn
+                    className={classes.mintBtn}
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    loading={state.status === TYPE.pending}
+                    handleClick={pay}
+                    disabled={!account || state.status === TYPE.pending}
+                    type="submit"
+                  >
+                    Mint
+                  </ProgressBtn>
+                </Grid>
+              </Grid>
+              <Grid item container xs={12} justifyContent="center">
+                <Grid
+                  item
+                  md={6}
+                  xs={12}
+                  container
+                  direction="column"
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Typography
+                    display="block"
+                    style={{ margin: "1rem 0" }}
+                    gutterBottom
+                  >
+                    Minimum amount to mint NFT <b>{formRarePrice} ETH</b>*
+                    <br />
+                    Total minted so far <b>{totalSupply}</b>
+                  </Typography>
 
-
-<h1>RARE</h1>
-      <Grid item xs={12}>
-        <Grid container justifyContent="center" alignItems="stretch">
-          <TextField
-            className={classes.textfield}
-            label="Your ETH amount"
-            variant="outlined"
-            onChange={handleChange}
-            disabled={!account}
-            value={formRarePrice}
-          />
-          <ProgressBtn
-            className={classes.mintBtn}
-            variant="contained"
-            color="primary"
-            size="large"
-            loading={state.status === TYPE.pending}
-            handleClick={pay}
-            disabled={!account || state.status === TYPE.pending}
-            type="submit"
-          >
-            Mint
-          </ProgressBtn>
-        </Grid>
-      </Grid>
-      <Grid item container xs={12} justifyContent="center">
-        <Grid
-          item
-          md={6}
-          xs={12}
-          container
-          direction="column"
-          justifyContent="center"
-          alignItems="center"
-        >
-          <Typography display="block" style={{ margin: "1rem 0" }} gutterBottom>
-            Minimum amount to mint NFT <b>{formRarePrice} ETH</b>*
-            <br />
-            Total minted so far <b>{totalSupply}</b>
-          </Typography>
-
-          <Typography
-            display="block"
-            variant="caption"
-            style={{ maxWidth: "70%" }}
-          >
-            *You can mint at, or above, the current minimum amount ({mintPrice}{" "}
-            ETH). The new minimum is always set to be higher than the previous
-            mint price. A whale could set a high floor at any point they like,
-            so mint early!
-          </Typography>
-        </Grid>
+                  <Typography
+                    display="block"
+                    variant="caption"
+                    style={{ maxWidth: "70%" }}
+                  >
+                    *You can mint at, or above, the current minimum amount (
+                    {mintPrice} ETH). The new minimum is always set to be higher
+                    than the previous mint price. A whale could set a high floor
+                    at any point they like, so mint early!
+                  </Typography>
+                </Grid>
+              </Grid>
+            </TabPanel>
+          </Grid>
+        </TabContext>
       </Grid>
     </Grid>
   );
