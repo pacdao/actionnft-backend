@@ -86,16 +86,17 @@ async function getABI(address) {
 	return resp
 }
 const MintComp = ({
-  formMintPrice,
   priceDispatch,
+  formCommonPrice,
+  formRarePrice,
   mintPrice,
-  getMinPrice,
+  getCommonPrice,
   totalSupply,
 }) => {
+  console.log("Loaded", formRarePrice, mintPrice, formCommonPrice);
+
   const classes = useStyles();
   const { account, signer } = useEthersProvider();
-  console.log("Hi");
-  console.log(mintPrice);
 
   const [state, dispatch] = React.useReducer(stateReducer, {
     status: null,
@@ -108,17 +109,17 @@ const MintComp = ({
     priceDispatch({
       type: TYPE.success,
       mintPrice: mintPrice,
-      formMintPrice: value,
+      formCommonPrice: value,
     });
   }
 
   async function pay(evt) {
     evt.preventDefault();
     try {
-      if (Number(formMintPrice) < Number(mintPrice)) {
+      if (Number(formCommonPrice) < Number(mintPrice)) {
         throw new Error("Your amount cannot be less than minimum amount");
       }
-      const eth = parseUnits(formMintPrice, "ether");
+      const eth = parseUnits(formCommonPrice, "ether");
       const wei = formatUnits(eth, "wei");
       const _abi = await abi;
       const contract = new ethers.Contract(address, _abi.abi, signer);
@@ -127,11 +128,11 @@ const MintComp = ({
       });
       dispatch({ type: TYPE.pending });
       const { blockHash } = await txResp.wait();
-      const updatedMintPrice = await getMinPrice();
+      const updatedMintPrice = await getCommonPrice();
       priceDispatch({
         type: TYPE.success,
         mintPrice: updatedMintPrice,
-        formMintPrice: updatedMintPrice,
+        formCommonPrice: updatedMintPrice,
       });
       dispatch({ type: TYPE.success, blockHash });
     } catch (error) {
@@ -177,6 +178,9 @@ const MintComp = ({
           )}
         </Grid>
       </Grid>
+
+<h1>COMMON</h1>
+
       <Grid item xs={12}>
         <Grid container justifyContent="center" alignItems="stretch">
           <TextField
@@ -185,7 +189,7 @@ const MintComp = ({
             variant="outlined"
             onChange={handleChange}
             disabled={!account}
-            value={formMintPrice}
+            value={formCommonPrice}
           />
           <ProgressBtn
             className={classes.mintBtn}
@@ -213,6 +217,61 @@ const MintComp = ({
         >
           <Typography display="block" style={{ margin: "1rem 0" }} gutterBottom>
             Minimum amount to mint NFT <b>{mintPrice} ETH</b>*
+            <br />
+            Total minted so far <b>{totalSupply}</b>
+          </Typography>
+
+          <Typography
+            display="block"
+            variant="caption"
+            style={{ maxWidth: "70%" }}
+          >
+            *You can mint at, or above, the current minimum amount ({mintPrice}{" "}
+            ETH). The new minimum is always set to be higher than the previous
+            mint price. A whale could set a high floor at any point they like,
+            so mint early!
+          </Typography>
+        </Grid>
+      </Grid>
+
+
+<h1>RARE</h1>
+      <Grid item xs={12}>
+        <Grid container justifyContent="center" alignItems="stretch">
+          <TextField
+            className={classes.textfield}
+            label="Your ETH amount"
+            variant="outlined"
+            onChange={handleChange}
+            disabled={!account}
+            value={formRarePrice}
+          />
+          <ProgressBtn
+            className={classes.mintBtn}
+            variant="contained"
+            color="primary"
+            size="large"
+            loading={state.status === TYPE.pending}
+            handleClick={pay}
+            disabled={!account || state.status === TYPE.pending}
+            type="submit"
+          >
+            Mint
+          </ProgressBtn>
+        </Grid>
+      </Grid>
+      <Grid item container xs={12} justifyContent="center">
+        <Grid
+          item
+          md={6}
+          xs={12}
+          container
+          direction="column"
+          justifyContent="center"
+          alignItems="center"
+        >
+          <Typography display="block" style={{ margin: "1rem 0" }} gutterBottom>
+            Minimum amount to mint NFT <b>{formRarePrice} ETH</b>*
             <br />
             Total minted so far <b>{totalSupply}</b>
           </Typography>

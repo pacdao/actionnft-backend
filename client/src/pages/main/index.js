@@ -40,7 +40,6 @@ async function getABI(address) {
 	const resp =await import(`artifacts/deployments/dev/${address}.json`);
 	return resp
 }
-//const abi = import(`artifacts/deployments/dev/0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87.json`);
 
 
 function stateReducer(state, action) {
@@ -56,7 +55,9 @@ function stateReducer(state, action) {
         ...state,
         status: TYPE.success,
         mintPrice: action.mintPrice,
-        formMintPrice: action.formMintPrice,
+	formCommonPrice: action.formCommonPrice,
+	formRarePrice: action.formRarePrice,
+        totalSupply: action.totalSupply,
       };
       if (action.totalSupply) {
         newState.totalSupply = action.totalSupply;
@@ -94,9 +95,8 @@ const Main = () => {
     totalSupply: "",
   });
 
-  const getMinPrice = async () => {
+  const getCommonPrice = async () => {
     try {
-      console.log("Getting min price");
       const _abi = await abi;
       const contract = new ethers.Contract(address, _abi.abi, provider);
       const minPrice = await contract.commonPrice();
@@ -108,30 +108,50 @@ const Main = () => {
     }
   };
 
+  const getRarePrice = async () => {
+    try {
+      console.log("Getting min price");
+      const _abi = await abi;
+      const contract = new ethers.Contract(address, _abi.abi, provider);
+      const bidPrice = await contract.bidPrice();
+      const parsedBidPrice = bidPrice.toString();
+      console.log("RARE", parsedBidPrice);
+      return formatUnits(parsedBidPrice, 18);
+    } catch (error) {
+	    console.log(error);
+      throw error;
+    }
+  };
+
   const getTotalMinted = async () => {
     try {
       const _abi = await abi;
-      const contract = new ethers.Contract(address, _abi, provider);
+      const contract = new ethers.Contract(address, _abi.abi, provider);
       const totalSupply = await contract.totalSupply();
       const parsedTotalSupply = totalSupply.toString();
       return parsedTotalSupply;
     } catch (error) {
+      console.log(error);
       throw error;
     }
   };
+
+
 
   // onMount
   React.useEffect(() => {
     (async () => {
       try {
-        const currentMintedPrice = await getMinPrice();
-	console.log("Got it");
-	console.log(currentMintedPrice);
+        const currentCommonPrice = await getCommonPrice();
         const totalMintedSupply = await getTotalMinted();
+	const currentRarePrice = await getRarePrice();
+	console.log("COMMON PRICE", currentCommonPrice);
+	console.log("RARE PRICE", currentRarePrice);
         dispatch({
           type: TYPE.success,
-          mintPrice: currentMintedPrice,
-          formMintPrice: currentMintedPrice,
+          mintPrice: currentCommonPrice,
+          formCommonPrice: currentCommonPrice,
+          formRarePrice: currentRarePrice,
           totalSupply: totalMintedSupply,
         });
       } catch (error) {
@@ -140,8 +160,8 @@ const Main = () => {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const { formMintPrice, mintPrice, totalSupply } = state;
+  //console.log(formMintPrice," HERE" );
+  const { formCommonPrice, formRarePrice, mintPrice, totalSupply } = state;
 
   return (
     <Grid className={classes.root} container>
@@ -165,9 +185,10 @@ const Main = () => {
               <form>
                 <MintComp
                   priceDispatch={dispatch}
-                  formMintPrice={formMintPrice}
+                  formCommonPrice={formCommonPrice}
+                  formRarePrice={formRarePrice}
                   mintPrice={mintPrice}
-                  getMinPrice={getMinPrice}
+                  getCommonPrice={getCommonPrice}
                   totalSupply={totalSupply}
                 />
               </form>
