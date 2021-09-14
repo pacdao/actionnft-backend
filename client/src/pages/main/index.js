@@ -5,14 +5,12 @@ import { makeStyles } from "@material-ui/styles";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 import Grid from "@material-ui/core/Grid";
-import Grow from "@material-ui/core/Grow";
 
 import { useEthersProvider } from "contexts/EthersContext";
 //import PACFounderContract from "contracts/PACFounderContract";
 import deploymentMap from "artifacts/deployments/map.json";
 import { abbrAddress, TYPE } from "utils";
 import MintComp from "./MintComp";
-import pacImage from "assets/pacanim.gif";
 import chartImage from "assets/chart.png";
 import { COLOR } from "theme";
 
@@ -24,26 +22,16 @@ const useStyles = makeStyles((theme) => ({
     padding: "2rem",
   },
   div: { display: "flex", justifyContent: "center" },
-  img: {
-    height: "calc(100vh - 50vh)",
-  },
   action: {
     marginBottom: "0.75rem",
     [theme.breakpoints.up("md")]: { marginBottom: "2rem" },
   },
 }));
 
-const address = deploymentMap['dev']['ActionNFT'][0]; 
-const abi = getABI(address);
+const address = deploymentMap["dev"]["ActionNFT"][0];
 
-async function getABI(address) {
-	const resp =await import(`artifacts/deployments/dev/${address}.json`);
-	return resp
-}
-
-
-function stateReducer(state, action) {
-  switch (action.type) {
+function stateReducer(state, { type, payload }) {
+  switch (type) {
     case TYPE.pending: {
       return {
         ...state,
@@ -51,28 +39,21 @@ function stateReducer(state, action) {
       };
     }
     case TYPE.success: {
-      const newState = {
+      return {
         ...state,
+        ...payload,
         status: TYPE.success,
-        mintPrice: action.mintPrice,
-	formCommonPrice: action.formCommonPrice,
-	formRarePrice: action.formRarePrice,
-        totalSupply: action.totalSupply,
       };
-      if (action.totalSupply) {
-        newState.totalSupply = action.totalSupply;
-      }
-      return newState;
     }
     case TYPE.error: {
       return {
         ...state,
+        error: payload.error,
         status: TYPE.error,
-        error: action,
       };
     }
     default: {
-      throw new Error(`Unhandled action type: ${action.type}`);
+      throw new Error(`Unhandled action type: ${type}`);
     }
   }
 }
@@ -90,120 +71,125 @@ const Main = () => {
   const [state, dispatch] = React.useReducer(stateReducer, {
     status: null,
     error: null,
+    contract: null,
+    abi: null,
     mintPrice: "",
-    formMintPrice: "",
+    formCommonPrice: "",
+    formRarePrice: "",
     totalSupply: "",
   });
 
-  const getCommonPrice = async () => {
-    try {
-      const _abi = await abi;
-      const contract = new ethers.Contract(address, _abi.abi, provider);
-      const minPrice = await contract.commonPrice();
-      const parsedMinPrice = minPrice.toString();
-      return formatUnits(parsedMinPrice, 18);
-    } catch (error) {
-	    console.log(error);
-      throw error;
-    }
+  const dispatchSuccess = (payload) => {
+    dispatch({
+      type: TYPE.success,
+      payload,
+    });
   };
 
-  const getRarePrice = async () => {
+  const getCommonPrice = React.useCallback(async () => {
     try {
-      console.log("Getting min price");
-      const _abi = await abi;
-      const contract = new ethers.Contract(address, _abi.abi, provider);
-      const bidPrice = await contract.bidPrice();
-      const parsedBidPrice = bidPrice.toString();
-      console.log("RARE", parsedBidPrice);
-      return formatUnits(parsedBidPrice, 18);
+      const minPrice = await state.contract.commonPrice();
+      return formatUnits(minPrice.toString(), 18);
     } catch (error) {
-	    console.log(error);
+      console.log(error);
       throw error;
     }
-  };
+  }, [state.contract]);
 
-  const getTotalMinted = async () => {
+  const getRarePrice = React.useCallback(async () => {
     try {
-      const _abi = await abi;
-      const contract = new ethers.Contract(address, _abi.abi, provider);
-      const totalSupply = await contract.totalSupply();
+      const bidPrice = await state.contract.bidPrice();
+      return formatUnits(bidPrice.toString(), 18);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }, [state.contract]);
+
+  const getTotalMinted = React.useCallback(async () => {
+    try {
+      const totalSupply = await state.contract.totalSupply();
       const parsedTotalSupply = totalSupply.toString();
       return parsedTotalSupply;
     } catch (error) {
       console.log(error);
       throw error;
     }
-  };
+  }, [state.contract]);
 
+  async function getABI(address) {
+    const resp = await import(`artifacts/deployments/dev/${address}.json`);
+    return resp;
+  }
 
-
-  // onMount
   React.useEffect(() => {
-    (async () => {
-      try {
-        const currentCommonPrice = await getCommonPrice();
-        const totalMintedSupply = await getTotalMinted();
-	const currentRarePrice = await getRarePrice();
-	console.log("COMMON PRICE", currentCommonPrice);
-	console.log("RARE PRICE", currentRarePrice);
-        dispatch({
-          type: TYPE.success,
+    if (state.contract) {
+      (async () => {
+        const [currentCommonPrice, totalMintedSupply, currentRarePrice] =
+          await Promise.all([
+            getCommonPrice(),
+            getTotalMinted(),
+            getRarePrice(),
+          ]);
+
+        dispatchSuccess({
           mintPrice: currentCommonPrice,
           formCommonPrice: currentCommonPrice,
           formRarePrice: currentRarePrice,
           totalSupply: totalMintedSupply,
         });
+      })();
+    }
+  }, [state.contract, dispatch, getCommonPrice, getTotalMinted, getRarePrice]);
+
+  // onMount
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const _abi = await getABI(address);
+        const abi = _abi.abi;
+        const contract = new ethers.Contract(address, abi, provider);
+
+        dispatchSuccess({
+          abi: _abi.abi,
+          contract,
+        });
       } catch (error) {
         dispatch({ type: TYPE.error, error });
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  //console.log(formMintPrice," HERE" );
-  const { formCommonPrice, formRarePrice, mintPrice, totalSupply } = state;
+  }, [provider]);
+
+  if (!state.contract) {
+    return null;
+  }
 
   return (
     <Grid className={classes.root} container>
       <Grid item xs={12} container justifyContent="center">
-        <img
-          className={classes.img}
-          alt="PAC Crypto Activism NFT"
-          src={pacImage}
-          //src="https://pbs.twimg.com/media/E91wIcSXsAI3syG.jpg:large" //{spinny}
-        />
-      </Grid>
-      <Grid item xs={12} container justifyContent="center">
         <div className={`${classes.div} ${classes.action}`}>
-          <Grow
-            in
-            disableStrictModeCompat
-            style={{ transformOrigin: "0 0 0 0" }}
-            timeout={1000}
-          >
-            {account ? (
-              <form>
-                <MintComp
-                  priceDispatch={dispatch}
-                  formCommonPrice={formCommonPrice}
-                  formRarePrice={formRarePrice}
-                  mintPrice={mintPrice}
-                  getCommonPrice={getCommonPrice}
-                  totalSupply={totalSupply}
-                />
-              </form>
-            ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={connect}
-                type="submit"
-              >
-                Connect your wallet
-              </Button>
-            )}
-          </Grow>
+          {account ? (
+            <form>
+              <MintComp
+                formCommonPrice={state.formCommonPrice}
+                formRarePrice={state.formRarePrice}
+                mintPrice={state.mintPrice}
+                totalSupply={state.totalSupply}
+                dispatch={dispatch}
+                getCommonPrice={getCommonPrice}
+              />
+            </form>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={connect}
+              type="submit"
+            >
+              Connect your wallet
+            </Button>
+          )}
         </div>
       </Grid>
       <Grid item container justifyContent="center">
