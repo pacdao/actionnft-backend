@@ -43,12 +43,10 @@ def test_withdraw_balance_increases_on_mint(nft, bob):
     nft.mint_common({'from': bob, 'value': nft.commonPrice()})
     assert nft.withdrawableBalance(bob) > 0
 
-
 def test_can_mint_many(nft, bob):
     payment_price = nft.getCostMany(10)[0]
     nft.mintMany(10, {'from': bob, 'value': payment_price})
     assert nft.balanceOf(bob) == 10
-
 
 def test_mint_counter_correct_multimint(nft, bob):
     payment_price = nft.getCostMany(10)[0]

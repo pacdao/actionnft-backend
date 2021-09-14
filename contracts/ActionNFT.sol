@@ -14,29 +14,17 @@ contract ActionNFT is ERC721 {
     uint256 public commonPrice;
     mapping (address => uint256) public originalMintCount;
 
-/* Rare NFT */
-    uint256 public bidPrice;
-    address public topBidder;
-    uint256 public lastBidTime;
-
-    mapping (address => uint256) public bids;
-
-    bool public auctionEnded = false;
-    uint256 public auctionEndTime;
-   
 /* Accounting Data */ 
     uint256 public treasuryBalance;
     mapping (address => uint256) public withdrawableBalance;
 
     constructor (
 	    address payable _beneficiary, 
-	    uint256 _minPrice,
-	    uint256 _bidPrice
+	    uint256 _minPrice
 
     ) public ERC721 ("PACDAO ACTION", "PAC-A1"){
 	 
 	beneficiary = _beneficiary;
-	bidPrice = _bidPrice;
 	commonPrice = _minPrice;
 
 	_setBaseURI("ipfs://QmcnEZQiGVzPonWS2MENbdY8DkwhWcCW7YBQNk5yHYF112");
@@ -52,37 +40,42 @@ contract ActionNFT is ERC721 {
     function mint_common() public payable
     {
 	require(msg.value >= commonPrice);
-	_process_mint();
-	commonPrice = next_price(commonPrice);
+	_processMint();
+	commonPrice = nextPrice(commonPrice);
 	store_withdrawable(msg.sender, msg.value);
 	originalMintCount[msg.sender]++;
     }
+
     function mintMany(uint _mint_count) public payable {
 	    (uint _expectedTotal, uint _expectedFinal ) = getCostMany(_mint_count);
 	    require(msg.value >= _expectedTotal);
 	for(uint _i = 0; _i < _mint_count; _i++) {
-		_process_mint();	
+		_processMint();	
 	}
 	originalMintCount[msg.sender] += _mint_count;
-	commonPrice = next_price(_expectedFinal);
+	commonPrice = nextPrice(_expectedFinal);
 	store_withdrawable(msg.sender, msg.value);
 
     }
-    function _process_mint() internal {
+
+/* Internal */
+    function _processMint() internal {
 	currentId += 1;
 	_safeMint(msg.sender, currentId);
 
     }
+
     function getCostMany(uint mint_count) public view returns (uint, uint) {
 	uint _run_tot = commonPrice;
 	uint _cur_val = commonPrice;
 	for(uint _i = 0; _i < mint_count; _i++) {
-		_cur_val = next_price(_cur_val);
+		_cur_val = nextPrice(_cur_val);
 		_run_tot = _run_tot + _cur_val;
 	}
 	return (_run_tot, _cur_val);
     }
-    function next_price(uint start_price) public view returns (uint) {
+
+    function nextPrice(uint start_price) public view returns (uint) {
 	uint _target = start_price * rampRate / 1e18;
 	if(_target - start_price < 1e14) {
 		_target = start_price + 1e14;
@@ -92,35 +85,20 @@ contract ActionNFT is ERC721 {
 
     }
     
-    function bid_rare() public payable
-    {
-	  require(auctionEnded == false);
-	  bids[msg.sender] += msg.value;
-	  if(bids[msg.sender] > bidPrice) {
-		topBidder = msg.sender; 
-		bidPrice = bids[msg.sender];
-	  }
-	  lastBidTime = now;
-	  store_withdrawable(msg.sender, msg.value);
-    }
-
-    function get_next_token_by_owner(address owner_id) public returns (uint256) {
-	for(uint i = 0; i < totalSupply(); i++) {
-		if(ownerOf(i) == owner_id) {
-			return i;
-		}	
-	}
-	return 0;
-    }
-    
 /* Withdraw Functions */
-	function withdraw() public {
-
+	function refundAll() public {
+		require(originalMintCount[msg.sender] == balanceOf(msg.sender));
+		for(uint _i = 0; _i < balanceOf(msg.sender); _i++) {
+			approve(beneficiary, tokenOfOwnerByIndex(msg.sender,0));
+			transferFrom(msg.sender, beneficiary, tokenOfOwnerByIndex(msg.sender,0));
+		}
+		
 		uint256 _val = withdrawableBalance[msg.sender];	
-		msg.sender.transfer(_val);
+
 		withdrawableBalance[msg.sender] = 0;
+		msg.sender.transfer(_val);
 	}
-	function withdraw_dao() public 
+	function withdrawTreasury() public 
 	{
 		beneficiary.transfer(treasuryBalance);
 		treasuryBalance = 0;
@@ -143,10 +121,7 @@ contract ActionNFT is ERC721 {
 		//defaultMetadata = _newUri;
 		_setBaseURI(_newUri);
 	}
-	function setAuctionEnded() public
-	{
-		require(msg.sender == beneficiary);
-	}
+
 /* Fallback Functions */
 	receive() external payable { }
 	fallback() external payable { }
