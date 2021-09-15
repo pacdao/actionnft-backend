@@ -28,8 +28,8 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const address = deploymentMap["dev"]["ActionNFT"][0];
-const address2 = deploymentMap["dev"]["ActionNFTRare"][0];
+const address = deploymentMap["4"]["ActionNFT"][0];
+const address2 = deploymentMap["4"]["ActionNFTRare"][0];
 
 function stateReducer(state, { type, payload }) {
   switch (type) {
@@ -148,7 +148,7 @@ const Main = () => {
   }, [state.contract]);
 
   async function getABI(address) {
-    const resp = await import(`artifacts/deployments/dev/${address}.json`);
+    const resp = await import(`artifacts/deployments/4/${address}.json`);
     return resp;
   }
 

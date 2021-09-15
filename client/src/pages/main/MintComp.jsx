@@ -84,14 +84,13 @@ function stateReducer(state, { type, payload }) {
     }
   }
 }
-
-const address = contractMap["dev"]["ActionNFT"][0];
-const address2 = contractMap["dev"]["ActionNFTRare"][0];
+const address = contractMap["4"]["ActionNFT"][0];
+const address2 = contractMap["4"]["ActionNFTRare"][0];
 const abi = getABI(address);
 const abi2 = getABI(address2);
 
 async function getABI(address) {
-  const resp = await import(`artifacts/deployments/dev/${address}.json`);
+  const resp = await import(`artifacts/deployments/4/${address}.json`);
   return resp;
 }
 
