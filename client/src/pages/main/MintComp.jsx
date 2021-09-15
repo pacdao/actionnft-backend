@@ -14,7 +14,8 @@ import Alert from "@material-ui/lab/Alert";
 import { Grid, Tab, Tabs } from "@material-ui/core";
 import contractMap from "artifacts/deployments/map.json";
 import { TabContext, TabPanel } from "@material-ui/lab";
-import pacImage from "assets/pacanim.gif";
+import pacImageCommon from "assets/commonNFT.png";
+import pacImageRare from "assets/rareNFT.png";
 
 const useStyles = makeStyles(() => ({
   img: {
@@ -85,7 +86,9 @@ function stateReducer(state, { type, payload }) {
 }
 
 const address = contractMap["dev"]["ActionNFT"][0];
+const address2 = contractMap["dev"]["ActionNFTRare"][0];
 const abi = getABI(address);
+const abi2 = getABI(address2);
 
 async function getABI(address) {
   const resp = await import(`artifacts/deployments/dev/${address}.json`);
@@ -94,6 +97,7 @@ async function getABI(address) {
 const MintComp = ({
   formCommonPrice,
   formRarePrice,
+  formTopBidders,
   mintPrice,
   totalSupply,
   dispatch: priceDispatch,
@@ -114,10 +118,46 @@ const MintComp = ({
     priceDispatch({
       type: TYPE.success,
       payload: {
+        totalSupply: totalSupply,
         mintPrice: mintPrice,
         formCommonPrice: value,
       },
     });
+  }
+  async function bid(evt) {
+    evt.preventDefault();
+    try {
+      if (Number(formCommonPrice) < Number(mintPrice)) {
+        throw new Error("Your amount cannot be less than minimum amount");
+      }
+      const eth = parseUnits(formCommonPrice, "ether");
+      const wei = formatUnits(eth, "wei");
+      const _abi2 = await abi2;
+      const contract2 = new ethers.Contract(address2, _abi2.abi, signer);
+      const txResp = await contract2.bidRare({
+        value: wei.toString(),
+      });
+      dispatch({ type: TYPE.pending });
+      const { blockHash } = await txResp.wait();
+      const updatedMintPrice = await getCommonPrice();
+      priceDispatch({
+        type: TYPE.success,
+        payload: {
+          mintPrice: updatedMintPrice,
+          formCommonPrice: updatedMintPrice,
+        },
+      });
+
+
+      dispatch({ type: TYPE.success, payload: { blockHash } });
+    } catch (error) {
+      dispatch({
+        type: TYPE.error,
+        payload: {
+          error: error.message || "Somethings wrong",
+        },
+      });
+    }
   }
 
   async function pay(evt) {
@@ -129,8 +169,10 @@ const MintComp = ({
       const eth = parseUnits(formCommonPrice, "ether");
       const wei = formatUnits(eth, "wei");
       const _abi = await abi;
+      const _abi2 = await abi2;
       const contract = new ethers.Contract(address, _abi.abi, signer);
-      const txResp = await contract.mint_common({
+      const contract2 = new ethers.Contract(address2, _abi2.abi, signer);
+      const txResp = await contract.mintCommon({
         value: wei.toString(),
       });
       dispatch({ type: TYPE.pending });
@@ -229,7 +271,7 @@ const MintComp = ({
                   <img
                     className={classes.img}
                     alt="PAC Crypto Activism NFT"
-                    src={pacImage}
+                    src={pacImageCommon}
                     //src="https://pbs.twimg.com/media/E91wIcSXsAI3syG.jpg:large" //{spinny}
                   />
                 </Grow>
@@ -244,6 +286,15 @@ const MintComp = ({
                     disabled={!account}
                     value={formCommonPrice}
                   />
+	          <TextField
+                    className={classes.textfield}
+                    label="Quantity"
+                    variant="outlined"
+                    onChange={handleChange}
+                    disabled={!account}
+                    value="1"
+                  />
+
                   <ProgressBtn
                     className={classes.mintBtn}
                     variant="contained"
@@ -273,7 +324,7 @@ const MintComp = ({
                     style={{ margin: "1rem 0" }}
                     gutterBottom
                   >
-                    Minimum amount to mint NFT <b>{mintPrice} ETH</b>*
+                    Mint NFT now for <b>{mintPrice} ETH</b>*
                     <br />
                     Total minted so far <b>{totalSupply}</b>
                   </Typography>
@@ -283,10 +334,9 @@ const MintComp = ({
                     variant="caption"
                     style={{ maxWidth: "70%" }}
                   >
-                    *You can mint at, or above, the current minimum amount (
-                    {mintPrice} ETH). The new minimum is always set to be higher
-                    than the previous mint price. A whale could set a high floor
-                    at any point they like, so mint early!
+                    * The price will increase by 20% after every mint so mint early.  You can mint several at a time as well.  Current price is (
+                    {mintPrice} ETH). 
+
                   </Typography>
                 </Grid>
               </Grid>
@@ -302,7 +352,7 @@ const MintComp = ({
                   <img
                     className={classes.img}
                     alt="PAC Crypto Activism NFT"
-                    src={pacImage}
+                    src={pacImageRare}
                     //src="https://pbs.twimg.com/media/E91wIcSXsAI3syG.jpg:large" //{spinny}
                   />
                 </Grow>
@@ -311,7 +361,7 @@ const MintComp = ({
                 <Grid container justifyContent="center" alignItems="stretch">
                   <TextField
                     className={classes.textfield}
-                    label="Your ETH amount"
+                    label="Your Bid"
                     variant="outlined"
                     onChange={handleChange}
                     disabled={!account}
@@ -323,11 +373,11 @@ const MintComp = ({
                     color="primary"
                     size="large"
                     loading={state.status === TYPE.pending}
-                    handleClick={pay}
+                    handleClick={bid}
                     disabled={!account || state.status === TYPE.pending}
                     type="submit"
                   >
-                    Mint
+                    Bid
                   </ProgressBtn>
                 </Grid>
               </Grid>
@@ -346,9 +396,8 @@ const MintComp = ({
                     style={{ margin: "1rem 0" }}
                     gutterBottom
                   >
-                    Minimum amount to mint NFT <b>{formRarePrice} ETH</b>*
+                    Top 5 bidders take it home!  <b>{formTopBidders} {formRarePrice} ETH</b>*
                     <br />
-                    Total minted so far <b>{totalSupply}</b>
                   </Typography>
 
                   <Typography

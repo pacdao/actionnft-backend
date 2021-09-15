@@ -29,6 +29,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const address = deploymentMap["dev"]["ActionNFT"][0];
+const address2 = deploymentMap["dev"]["ActionNFTRare"][0];
 
 function stateReducer(state, { type, payload }) {
   switch (type) {
@@ -72,10 +73,13 @@ const Main = () => {
     status: null,
     error: null,
     contract: null,
+    contract2: null,
     abi: null,
+    abi2: null,
     mintPrice: "",
     formCommonPrice: "",
     formRarePrice: "",
+    formTopBidders: "",
     totalSupply: "",
   });
 
@@ -96,15 +100,37 @@ const Main = () => {
     }
   }, [state.contract]);
 
-  const getRarePrice = React.useCallback(async () => {
+  const getCommonPriceMultiple = React.useCallback(async () => {
     try {
-      const bidPrice = await state.contract.bidPrice();
-      return formatUnits(bidPrice.toString(), 18);
+	    const qty = 2;
+	    const minPrice = await state.contract.getCostMany(qty);
+	    return formatUnits(minPrice.toString(), 18);
     } catch (error) {
       console.log(error);
       throw error;
     }
   }, [state.contract]);
+  const getTopBidders = React.useCallback(async () => {
+    try {
+      const topBidders = await state.contract2.topBidders(0);
+	    return "HELLO";
+      return topBidders;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }, [state.contract]);
+
+
+  const getRarePrice = React.useCallback(async () => {
+    try {
+      const bidPrice = await state.contract2.bidPrice();
+      return formatUnits(bidPrice.toString(), 18);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }, [state.contract2]);
 
   const getTotalMinted = React.useCallback(async () => {
     try {
@@ -123,24 +149,26 @@ const Main = () => {
   }
 
   React.useEffect(() => {
-    if (state.contract) {
+    if (state.contract2) {
       (async () => {
-        const [currentCommonPrice, totalMintedSupply, currentRarePrice] =
+        const [currentCommonPrice, totalMintedSupply, currentRarePrice, currentTopBidders] =
           await Promise.all([
             getCommonPrice(),
             getTotalMinted(),
             getRarePrice(),
+            getTopBidders(),
           ]);
 
         dispatchSuccess({
           mintPrice: currentCommonPrice,
           formCommonPrice: currentCommonPrice,
           formRarePrice: currentRarePrice,
+	  formTopBidders: currentTopBidders,
           totalSupply: totalMintedSupply,
         });
       })();
     }
-  }, [state.contract, dispatch, getCommonPrice, getTotalMinted, getRarePrice]);
+  }, [state.contract, dispatch, getCommonPrice, getTotalMinted, getRarePrice, getTopBidders]);
 
   // onMount
   React.useEffect(() => {
@@ -148,11 +176,15 @@ const Main = () => {
       try {
         const _abi = await getABI(address);
         const abi = _abi.abi;
+	const _abi2 = await getABI(address2);
+	const abi2 = _abi2.abi;
         const contract = new ethers.Contract(address, abi, provider);
+        const contract2 = new ethers.Contract(address2, abi2, provider);
 
         dispatchSuccess({
           abi: _abi.abi,
           contract,
+		abi2, contract2
         });
       } catch (error) {
         dispatch({ type: TYPE.error, error });
@@ -173,6 +205,7 @@ const Main = () => {
               <MintComp
                 formCommonPrice={state.formCommonPrice}
                 formRarePrice={state.formRarePrice}
+                topBidders={state.topBidders}
                 mintPrice={state.mintPrice}
                 totalSupply={state.totalSupply}
                 dispatch={dispatch}
