@@ -373,9 +373,8 @@ const MintComp = ({
                   </Typography>
 
                   <Typography display="block" variant="caption" style={{ maxWidth: "70%" }}>
-                    *You can mint at, or above, the current minimum amount ({mintPrice} ETH). The new minimum is always
-                    set to be higher than the previous mint price. A whale could set a high floor at any point they
-                    like, so mint early!
+                    
+                   The top five bidders will get to take home a copy of this rare artwork.  All else can claim a 90% refund within 30 days of auction end. 
                   </Typography>
                 </Grid>
               </Grid>
