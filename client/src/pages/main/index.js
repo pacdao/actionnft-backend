@@ -81,6 +81,7 @@ const Main = () => {
     formRarePrice: "",
     formTopBidders: "",
     totalSupply: "",
+    quantity: "",
   });
 
   const dispatchSuccess = (payload) => {
@@ -100,27 +101,30 @@ const Main = () => {
     }
   }, [state.contract]);
 
-  const getCommonPriceMultiple = React.useCallback(async () => {
-    try {
-	    const qty = 2;
-	    const minPrice = await state.contract.getCostMany(qty);
-	    return formatUnits(minPrice.toString(), 18);
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }, [state.contract]);
+  const getCommonPriceMultiple = React.useCallback(
+    async ({ target: { value } }) => {
+      try {
+        const minPrice = await state.contract.getCostMany(value);
+        return formatUnits(minPrice.toString(), 18);
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
+    },
+    [state.contract]
+  );
+
   const getTopBidders = React.useCallback(async () => {
     try {
       const topBidders = await state.contract2.topBidders(0);
-	    return "HELLO";
+      console.log("topBidders", topBidders);
+      return "HELLO";
       return topBidders;
     } catch (error) {
       console.log(error);
       throw error;
     }
   }, [state.contract]);
-
 
   const getRarePrice = React.useCallback(async () => {
     try {
@@ -151,21 +155,24 @@ const Main = () => {
   React.useEffect(() => {
     if (state.contract2) {
       (async () => {
-        const [currentCommonPrice, totalMintedSupply, currentRarePrice, currentTopBidders] =
-          await Promise.all([
+        try {
+          const [currentCommonPrice, totalMintedSupply, currentRarePrice, currentTopBidders] = await Promise.all([
             getCommonPrice(),
             getTotalMinted(),
             getRarePrice(),
             getTopBidders(),
           ]);
 
-        dispatchSuccess({
-          mintPrice: currentCommonPrice,
-          formCommonPrice: currentCommonPrice,
-          formRarePrice: currentRarePrice,
-	  formTopBidders: currentTopBidders,
-          totalSupply: totalMintedSupply,
-        });
+          dispatchSuccess({
+            mintPrice: currentCommonPrice,
+            formCommonPrice: currentCommonPrice,
+            formRarePrice: currentRarePrice,
+            formTopBidders: currentTopBidders,
+            totalSupply: totalMintedSupply,
+          });
+        } catch (error) {
+          console.log("USEEFFECT API ERROR", error);
+        }
       })();
     }
   }, [state.contract, dispatch, getCommonPrice, getTotalMinted, getRarePrice, getTopBidders]);
@@ -176,15 +183,16 @@ const Main = () => {
       try {
         const _abi = await getABI(address);
         const abi = _abi.abi;
-	const _abi2 = await getABI(address2);
-	const abi2 = _abi2.abi;
+        const _abi2 = await getABI(address2);
+        const abi2 = _abi2.abi;
         const contract = new ethers.Contract(address, abi, provider);
         const contract2 = new ethers.Contract(address2, abi2, provider);
 
         dispatchSuccess({
           abi: _abi.abi,
           contract,
-		abi2, contract2
+          abi2,
+          contract2,
         });
       } catch (error) {
         dispatch({ type: TYPE.error, error });
@@ -196,6 +204,8 @@ const Main = () => {
     return null;
   }
 
+  const { contract, formCommonPrice, formRarePrice, quantity, formTopBidders, mintPrice, totalSupply } = state;
+
   return (
     <Grid className={classes.root} container>
       <Grid item xs={12} container justifyContent="center">
@@ -203,23 +213,20 @@ const Main = () => {
           {account ? (
             <form>
               <MintComp
-                formCommonPrice={state.formCommonPrice}
-                formRarePrice={state.formRarePrice}
-                topBidders={state.topBidders}
-                mintPrice={state.mintPrice}
-                totalSupply={state.totalSupply}
+                contract={contract}
+                formCommonPrice={formCommonPrice}
+                formRarePrice={formRarePrice}
+                formTopBidders={formTopBidders}
+                mintPrice={mintPrice}
+                totalSupply={totalSupply}
+                quantity={quantity}
                 dispatch={dispatch}
+                dispatchSuccess={dispatchSuccess}
                 getCommonPrice={getCommonPrice}
               />
             </form>
           ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={connect}
-              type="submit"
-            >
+            <Button variant="contained" color="primary" size="large" onClick={connect} type="submit">
               Connect your wallet
             </Button>
           )}
@@ -227,12 +234,7 @@ const Main = () => {
       </Grid>
       <Grid item container justifyContent="center">
         {abbrAccount && (
-          <Typography
-            variant="overline"
-            display="block"
-            gutterBottom
-            style={{ marginBottom: "1rem" }}
-          >
+          <Typography variant="overline" display="block" gutterBottom style={{ marginBottom: "1rem" }}>
             Connected to {chainName} @ {abbrAccount}.
           </Typography>
         )}
@@ -242,64 +244,44 @@ const Main = () => {
           About
         </Typography>
         <Typography gutterBottom>
-          The PAC DAO Founder Token is an ERC-721 NFT that doesn’t do anything
-          or confer any special rights. It’s just a way to receive a memento of
-          support for promoting a good cause. All proceeds are being used to
-          fund the DAO, which is planning action campaigns in accordance with
-          its mission: PAC is not actually a Political Action Committee, but an
-          issue group that stands for People Advocating for Crypto.
+          The PAC DAO Founder Token is an ERC-721 NFT that doesn’t do anything or confer any special rights. It’s just a
+          way to receive a memento of support for promoting a good cause. All proceeds are being used to fund the DAO,
+          which is planning action campaigns in accordance with its mission: PAC is not actually a Political Action
+          Committee, but an issue group that stands for People Advocating for Crypto.
         </Typography>
         <Typography gutterBottom>
-          Since every NFT drop requires interesting tokenomics, PAC DAO has a
-          fun way to reward early adopters. The initial mint price is very
-          cheap, well below price of gas. However, the floor price increases by
-          at least 7.5% after each mint, so early supporters get a nice
-          discount. Additionally, the DAO address receives 10 additional tokens
-          throughout the initial mint to distribute to the community as desired.
+          Since every NFT drop requires interesting tokenomics, PAC DAO has a fun way to reward early adopters. The
+          initial mint price is very cheap, well below price of gas. However, the floor price increases by at least 7.5%
+          after each mint, so early supporters get a nice discount. Additionally, the DAO address receives 10 additional
+          tokens throughout the initial mint to distribute to the community as desired.
         </Typography>
         <Typography gutterBottom>
-          The other aspect built into the minting mechanics is that anybody who
-          likes can choose to raise the stakes by minting at any amount above
-          the floor price. Should some whale choose to do this, the new floor
-          price would raise accordingly, and the supply would be massively
-          curtailed.
+          The other aspect built into the minting mechanics is that anybody who likes can choose to raise the stakes by
+          minting at any amount above the floor price. Should some whale choose to do this, the new floor price would
+          raise accordingly, and the supply would be massively curtailed.
         </Typography>
         <Typography gutterBottom>
-          Even if people just mint at floor price, the effective supply is
-          effectively scarce.
+          Even if people just mint at floor price, the effective supply is effectively scarce.
         </Typography>
         <center style={{ padding: "1rem" }}>
-          <img
-            style={{ width: "100%", height: "auto" }}
-            src={chartImage}
-            alt="pac doa founder token chart"
-          />
+          <img style={{ width: "100%", height: "auto" }} src={chartImage} alt="pac doa founder token chart" />
         </center>
         <Typography gutterBottom>
-          In reality these numbers could be higher if whales choose to
-          accelerate the floor price. These are the{" "}
-          <a
-            href="https://github.com/PacDAO/founder-token"
-            target="_blank"
-            rel="noreferrer"
-          >
+          In reality these numbers could be higher if whales choose to accelerate the floor price. These are the{" "}
+          <a href="https://github.com/PacDAO/founder-token" target="_blank" rel="noreferrer">
             experimental results derived from the Brownie tests
           </a>{" "}
-          included in the GitHub repository. If you’re technical, it’s a great
-          idea to read through it to understand the mechanics, or check out the
-          token deployed at{" "}
+          included in the GitHub repository. If you’re technical, it’s a great idea to read through it to understand the
+          mechanics, or check out the token deployed at{" "}
           <a href="https://etherscan.io/address/0x63994b223f01b943eff986b1b379312508dc15f8">
             {abbrAddress("0x63994b223f01b943eff986b1b379312508dc15f8")}
           </a>
         </Typography>
         <Typography>
-          Assuming everybody just mints at floor price, the badge will be
-          cheaper than gas for about the first 50 coins. By NFT 100, the token
-          will cost about half an ETH. By 200, only millionaires will be able to
-          afford it. By 300, only billionaires will be able to afford it. The
-          theoretical cap is some number shortly thereafter when overflow errors
-          would prevent minting. Practically, it would be a pleasant surprise if
-          a hundred get minted.
+          Assuming everybody just mints at floor price, the badge will be cheaper than gas for about the first 50 coins.
+          By NFT 100, the token will cost about half an ETH. By 200, only millionaires will be able to afford it. By
+          300, only billionaires will be able to afford it. The theoretical cap is some number shortly thereafter when
+          overflow errors would prevent minting. Practically, it would be a pleasant surprise if a hundred get minted.
         </Typography>
       </Grid>
     </Grid>

@@ -94,14 +94,18 @@ async function getABI(address) {
   const resp = await import(`artifacts/deployments/dev/${address}.json`);
   return resp;
 }
+
 const MintComp = ({
+  contract,
   formCommonPrice,
   formRarePrice,
   formTopBidders,
   mintPrice,
   totalSupply,
+  quantity,
   dispatch: priceDispatch,
   getCommonPrice,
+  dispatchSuccess,
 }) => {
   const classes = useStyles();
   const { account, signer } = useEthersProvider();
@@ -147,7 +151,6 @@ const MintComp = ({
           formCommonPrice: updatedMintPrice,
         },
       });
-
 
       dispatch({ type: TYPE.success, payload: { blockHash } });
     } catch (error) {
@@ -213,19 +216,13 @@ const MintComp = ({
           )}
 
           {state.status === TYPE.success && state.blockHash && (
-            <Alert
-              severity="success"
-              style={{ backgroundColor: "lightGreen", marginBottom: "1rem" }}
-            >
+            <Alert severity="success" style={{ backgroundColor: "lightGreen", marginBottom: "1rem" }}>
               Success, {state.blockHash}
             </Alert>
           )}
 
           {state.status === TYPE.error && (
-            <Alert
-              severity="error"
-              style={{ backgroundColor: "lightsalmon", marginBottom: "1rem" }}
-            >
+            <Alert severity="error" style={{ backgroundColor: "lightsalmon", marginBottom: "1rem" }}>
               {state.error}
             </Alert>
           )}
@@ -234,13 +231,7 @@ const MintComp = ({
 
       <Grid container>
         <TabContext value={state.tabValue}>
-          <Grid
-            item
-            xs={12}
-            container
-            justifyContent="center"
-            alignItems="stretch"
-          >
+          <Grid item xs={12} container justifyContent="center" alignItems="stretch">
             <Tabs
               centered
               indicatorColor="primary"
@@ -262,12 +253,7 @@ const MintComp = ({
           <Grid item xs={12}>
             <TabPanel value={0} index={0}>
               <Grid item xs={12} container justifyContent="center">
-                <Grow
-                  in
-                  disableStrictModeCompat
-                  style={{ transformOrigin: "0 0 0 0" }}
-                  timeout={1000}
-                >
+                <Grow in disableStrictModeCompat style={{ transformOrigin: "0 0 0 0" }} timeout={1000}>
                   <img
                     className={classes.img}
                     alt="PAC Crypto Activism NFT"
@@ -282,17 +268,31 @@ const MintComp = ({
                     className={classes.textfield}
                     label="Your ETH amount"
                     variant="outlined"
-                    onChange={handleChange}
-                    disabled={!account}
+                    onChange={() => {}}
+                    disabled
                     value={formCommonPrice}
                   />
-	          <TextField
+                  <TextField
                     className={classes.textfield}
                     label="Quantity"
                     variant="outlined"
-                    onChange={handleChange}
+                    onChange={async ({ target: { value } }) => {
+                      try {
+                        dispatchSuccess({
+                          quantity: value,
+                        });
+                        if (value) {
+                          const [minPrice] = await contract.getCostMany(value);
+                          const parsedValue = formatUnits(minPrice.toString(), 18);
+                          dispatchSuccess({ formCommonPrice: parsedValue });
+                        }
+                      } catch (error) {
+                        console.log(error);
+                        throw error;
+                      }
+                    }}
                     disabled={!account}
-                    value="1"
+                    value={quantity}
                   />
 
                   <ProgressBtn
@@ -310,45 +310,23 @@ const MintComp = ({
                 </Grid>
               </Grid>
               <Grid item container xs={12} justifyContent="center">
-                <Grid
-                  item
-                  md={6}
-                  xs={12}
-                  container
-                  direction="column"
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Typography
-                    display="block"
-                    style={{ margin: "1rem 0" }}
-                    gutterBottom
-                  >
+                <Grid item md={6} xs={12} container direction="column" justifyContent="center" alignItems="center">
+                  <Typography display="block" style={{ margin: "1rem 0" }} gutterBottom>
                     Mint NFT now for <b>{mintPrice} ETH</b>*
                     <br />
                     Total minted so far <b>{totalSupply}</b>
                   </Typography>
 
-                  <Typography
-                    display="block"
-                    variant="caption"
-                    style={{ maxWidth: "70%" }}
-                  >
-                    * The price will increase by 20% after every mint so mint early.  You can mint several at a time as well.  Current price is (
-                    {mintPrice} ETH). 
-
+                  <Typography display="block" variant="caption" style={{ maxWidth: "70%" }}>
+                    * The price will increase by 20% after every mint so mint early. You can mint several at a time as
+                    well. Current price is ({mintPrice} ETH).
                   </Typography>
                 </Grid>
               </Grid>
             </TabPanel>
             <TabPanel value={1} index={1}>
               <Grid item xs={12} container justifyContent="center">
-                <Grow
-                  in
-                  disableStrictModeCompat
-                  style={{ transformOrigin: "0 0 0 0" }}
-                  timeout={1000}
-                >
+                <Grow in disableStrictModeCompat style={{ transformOrigin: "0 0 0 0" }} timeout={1000}>
                   <img
                     className={classes.img}
                     alt="PAC Crypto Activism NFT"
@@ -363,7 +341,9 @@ const MintComp = ({
                     className={classes.textfield}
                     label="Your Bid"
                     variant="outlined"
-                    onChange={handleChange}
+                    onChange={({ target: { value } }) => {
+                      dispatchSuccess({ formRarePrice: value });
+                    }}
                     disabled={!account}
                     value={formRarePrice}
                   />
@@ -382,33 +362,20 @@ const MintComp = ({
                 </Grid>
               </Grid>
               <Grid item container xs={12} justifyContent="center">
-                <Grid
-                  item
-                  md={6}
-                  xs={12}
-                  container
-                  direction="column"
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Typography
-                    display="block"
-                    style={{ margin: "1rem 0" }}
-                    gutterBottom
-                  >
-                    Top 5 bidders take it home!  <b>{formTopBidders} {formRarePrice} ETH</b>*
+                <Grid item md={6} xs={12} container direction="column" justifyContent="center" alignItems="center">
+                  <Typography display="block" style={{ margin: "1rem 0" }} gutterBottom>
+                    Top 5 bidders take it home!{" "}
+                    <b>
+                      {formTopBidders} {formRarePrice} ETH
+                    </b>
+                    *
                     <br />
                   </Typography>
 
-                  <Typography
-                    display="block"
-                    variant="caption"
-                    style={{ maxWidth: "70%" }}
-                  >
-                    *You can mint at, or above, the current minimum amount (
-                    {mintPrice} ETH). The new minimum is always set to be higher
-                    than the previous mint price. A whale could set a high floor
-                    at any point they like, so mint early!
+                  <Typography display="block" variant="caption" style={{ maxWidth: "70%" }}>
+                    *You can mint at, or above, the current minimum amount ({mintPrice} ETH). The new minimum is always
+                    set to be higher than the previous mint price. A whale could set a high floor at any point they
+                    like, so mint early!
                   </Typography>
                 </Grid>
               </Grid>
