@@ -88,9 +88,14 @@ contract ActionNFT is ERC721 {
 /* Withdraw Functions */
 	function refundAll() public {
 		require(originalMintCount[msg.sender] == balanceOf(msg.sender));
-		for(uint _i = 0; _i < balanceOf(msg.sender); _i++) {
-			approve(beneficiary, tokenOfOwnerByIndex(msg.sender,0));
-			transferFrom(msg.sender, beneficiary, tokenOfOwnerByIndex(msg.sender,0));
+		uint _ownerCount = balanceOf(msg.sender);
+		uint[] memory _ownedTokens = new uint[](_ownerCount);
+
+		for(uint _i = 0; _i < _ownerCount; _i++) {
+			_ownedTokens[_i] = tokenOfOwnerByIndex(msg.sender, _i);
+		}
+		for(uint _i = 0; _i < _ownerCount; _i++) {
+			_burn(_ownedTokens[_i]);
 		}
 		
 		uint256 _val = withdrawableBalance[msg.sender];	
