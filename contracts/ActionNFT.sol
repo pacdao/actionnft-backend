@@ -37,7 +37,7 @@ contract ActionNFT is ERC721 {
     }
 
 /* Payable Functions */
-    function mint_common() public payable
+    function mintCommon() public payable
     {
 	require(msg.value >= commonPrice);
 	_processMint();

@@ -23,7 +23,7 @@ def nft(alice):
 
 @pytest.fixture(scope="function")
 def mint(nft, bob):
-    nft.mint_common({'from': bob, 'value': nft.commonPrice()})
+    nft.mintCommon({'from': bob, 'value': nft.commonPrice()})
     return nft
 
 
