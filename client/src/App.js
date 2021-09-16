@@ -42,9 +42,7 @@ function App() {
         )}
         {provider && !isCorrectChain && (
           <Grid container justifyContent="center">
-            <Alert severity="error">
-              Please switch to Ethereum mainnet.
-            </Alert>
+            <Alert severity="error">Please switch to Ethereum mainnet.</Alert>
           </Grid>
         )}
         {provider && isCorrectChain && <Main />}

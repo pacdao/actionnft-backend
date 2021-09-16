@@ -1,18 +1,19 @@
-# Action NFT 1
+# Basic Sample Hardhat Project
 
-Action NFT 1 will be raising a refundable bug bounty towards the cause of striking the odious cryptocurrency language from the unrelated infrastructure bill.
+This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
 
-Two types of mints:
+Try running some of the following tasks:
 
-- Common mint, several exist (or can mint many)
-- Auction mint, top 5 get the piece at the end
+```shell
+npx hardhat accounts
+npx hardhat compile
+npx hardhat clean
+npx hardhat test
+npx hardhat node
+node scripts/sample-script.js
+npx hardhat help
+```
 
-Refundable for 30 days after end is announced
+TODO:
 
-## Installation
-
-To deploy, simply `brownie run deploy -I`
-
-This places all needed artifacts in the clients folder.  To run the frontend, go to clients folder and run `npm run install`, `npm run build`, `npm run start`
-
-
+setup webvitals
