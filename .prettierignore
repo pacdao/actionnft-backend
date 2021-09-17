@@ -1,0 +1,6 @@
+src/graphql/schema.json
+models
+artifacts
+.next
+cache
+.*
