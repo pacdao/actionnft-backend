@@ -26,17 +26,19 @@ def test_price_increases_on_buy(nft, bob):
 def test_price_increases_by_ramp_rate(nft, bob):
     init_price = nft.commonPrice()
     nft.mintCommon({"from": bob, "value": nft.commonPrice()})
-    assert nft.commonPrice() == init_price * (nft.rampRate() / 10 ** 18)
+    assert nft.commonPrice() == init_price + nft.rampRate()
+    #assert nft.commonPrice() == init_price * (nft.rampRate() / 10 ** 18)
 
 
 def test_price_multibid_increases_by_ramp_rate(nft, bob):
     last_price = nft.commonPrice()
     for i in range(10):
         nft.mintCommon({"from": bob, "value": nft.commonPrice()})
-        assert (
-            nft.commonPrice() // 10 ** 16
-            == last_price * (nft.rampRate() / 10 ** 18) // 10 ** 16
-        )
+        #assert (
+        #    nft.commonPrice() // 10 ** 16
+        #    == last_price * (nft.rampRate() / 10 ** 18) // 10 ** 16
+        #)
+        assert(nft.commonPrice() == (last_price + nft.rampRate()))
         last_price = nft.commonPrice()
 
 
@@ -60,3 +62,14 @@ def test_mint_counter_correct_multimint(nft, bob):
     payment_price = nft.getCostMany(10)[0]
     nft.mintMany(10, {"from": bob, "value": payment_price})
     assert nft.originalMintCount(bob) == 10
+
+
+def test_reach_limit(at_limit, alice):
+    assert at_limit.totalSupply() == at_limit.mintCap()
+
+def test_reach_limit(at_limit, alice):
+    with brownie.reverts('Insufficient Quantity'):
+        at_limit.mintCommon({'from': alice, 'value': at_limit.commonPrice()})
+
+
+

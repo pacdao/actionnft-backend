@@ -10,7 +10,7 @@ contract ActionNFT is ERC721Enumerable {
 
   /* Common NFT */
   uint256 public currentId;
-  uint256 public rampRate = 1200000000000000000;
+  uint256 public rampRate = 10**14;
   uint256 public commonPrice;
   mapping(address => uint256) public originalMintCount;
 
@@ -88,12 +88,7 @@ contract ActionNFT is ERC721Enumerable {
   }
 
   function nextPrice(uint256 start_price) public view returns (uint256) {
-    uint256 _target = (start_price * rampRate) / 1e18;
-    if (_target - start_price < 1e14) {
-      _target = start_price + 1e14;
-    }
-    _target = (_target / 1e14) * 1e14;
-    return (_target);
+    return start_price + rampRate;
   }
 
   /* Withdraw Functions */
@@ -172,7 +167,7 @@ contract ActionNFT is ERC721Enumerable {
   }
   modifier canMintQuantity(uint256 _quantity) {
     require(canMint == true, 'Minting period over');
-    require(totalSupply() + _quantity < mintCap, 'Insufficient Quantity');
+    require(totalSupply() + _quantity <= mintCap, 'Insufficient Quantity');
     _;
   }
 }

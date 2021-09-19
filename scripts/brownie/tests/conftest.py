@@ -58,3 +58,17 @@ def bids(nft_rare):
 def ended(bids, alice):
     bids.setAuctionEnded({"from": alice})
     return bids
+
+@pytest.fixture(scope="function")
+def at_limit(nft, accounts):
+    accts = 10
+    batches = 100
+    for i in range(batches):
+        user = i % accts
+        cap = nft.mintCap()
+        val = cap // batches
+        remaining = nft.mintCap() - nft.totalSupply()
+        if val >= remaining:
+            val = remaining 
+        nft.mintMany(val, {'from': accounts[user], 'value': nft.getCostMany(val)[0]})
+    return nft
