@@ -2,8 +2,9 @@
 pragma solidity 0.8.7;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 
-contract ActionNFT is ERC721 {
+contract ActionNFT is ERC721Enumerable {
   /* Variables */
   address payable private beneficiary;
 
@@ -14,8 +15,17 @@ contract ActionNFT is ERC721 {
   mapping(address => uint256) public originalMintCount;
 
   /* Accounting Data */
-  uint256 public treasuryBalance;
+  //uint256 public treasuryBalance;
   mapping(address => uint256) public withdrawableBalance;
+
+  /* Mint Data */
+  bool public canMint = true;
+  uint256 public mintCap = 3000;
+
+  /* Withdraw Data */
+  bool public isWithdrawPeriod = false;
+  uint256 public adminClaimTime;
+  uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
   constructor(address payable _beneficiary, uint256 _minPrice)
     public
@@ -30,11 +40,11 @@ contract ActionNFT is ERC721 {
   function store_withdrawable(address username, uint256 value) internal {
     uint256 _withdraw = (msg.value * 90) / 100;
     withdrawableBalance[msg.sender] += _withdraw;
-    treasuryBalance = (msg.value - _withdraw);
+    //treasuryBalance = (msg.value - _withdraw);
   }
 
   /* Payable Functions */
-  function mintCommon() public payable {
+  function mintCommon() public payable canMintQuantity(1) {
     require(msg.value >= commonPrice);
     _processMint();
     commonPrice = nextPrice(commonPrice);
@@ -42,7 +52,11 @@ contract ActionNFT is ERC721 {
     originalMintCount[msg.sender]++;
   }
 
-  function mintMany(uint256 _mint_count) public payable {
+  function mintMany(uint256 _mint_count)
+    public
+    payable
+    canMintQuantity(_mint_count)
+  {
     (uint256 _expectedTotal, uint256 _expectedFinal) = getCostMany(_mint_count);
     require(msg.value >= _expectedTotal);
     for (uint256 _i = 0; _i < _mint_count; _i++) {
@@ -83,42 +97,61 @@ contract ActionNFT is ERC721 {
   }
 
   /* Withdraw Functions */
-  // function refundAll() public {
-  //   require(originalMintCount[msg.sender] == balanceOf(msg.sender));
-  //   uint256 _ownerCount = balanceOf(msg.sender);
-  //   uint256[] memory _ownedTokens = new uint256[](_ownerCount);
 
-  //   for (uint256 _i = 0; _i < _ownerCount; _i++) {
-  //     _ownedTokens[_i] = tokenOfOwnerByIndex(msg.sender, _i);
-  //   }
-  //   for (uint256 _i = 0; _i < _ownerCount; _i++) {
-  //     _burn(_ownedTokens[_i]);
-  //   }
+  function withdrawTreasury() public saleEnded {
+    require(block.timestamp >= adminClaimTime);
 
-  //   uint256 _val = withdrawableBalance[msg.sender];
+    beneficiary.transfer(address(this).balance);
+  }
 
-  //   withdrawableBalance[msg.sender] = 0;
-  //   msg.sender.transfer(_val);
-  // }
+  function refundAll() public saleEnded {
+    require(originalMintCount[msg.sender] >= balanceOf(msg.sender));
 
-  function withdrawTreasury() public {
-    beneficiary.transfer(treasuryBalance);
-    treasuryBalance = 0;
+    uint256 _burnCount = originalMintCount[msg.sender];
+    uint256[] memory _ownedTokens = new uint256[](_burnCount);
+
+    for (uint256 _i = 0; _i < _burnCount; _i++) {
+      _ownedTokens[_i] = tokenOfOwnerByIndex(msg.sender, _i);
+    }
+    for (uint256 _i = 0; _i < _burnCount; _i++) {
+      _burn(_ownedTokens[_i]);
+    }
+
+    uint256 _val = withdrawableBalance[msg.sender];
+
+    withdrawableBalance[msg.sender] = 0;
+    payable(msg.sender).transfer(_val);
   }
 
   /* Admin Functions */
-  function updateBeneficiary(address payable _newBeneficiary) public {
-    require(msg.sender == beneficiary);
+  function signResolution(bool _resolution) public {
+    canMint = false;
+
+    // Floor Vote Successful
+    if (_resolution == true) {
+      // Admin can claim immediately
+      adminClaimTime = block.timestamp;
+
+      // Floor Vote Unsuccessful
+    } else {
+      // Withdraw period is active
+      isWithdrawPeriod = true;
+      adminClaimTime = block.timestamp + withdrawWindow;
+    }
+  }
+
+  function updateBeneficiary(address payable _newBeneficiary) public onlyAdmin {
     beneficiary = _newBeneficiary;
   }
 
-  function setTokenUri(uint256 _tokenId, string memory _newUri) public {
-    require(msg.sender == beneficiary);
+  function setTokenUri(uint256 _tokenId, string memory _newUri)
+    public
+    onlyAdmin
+  {
     // _setTokenURI(_tokenId, _newUri);
   }
 
-  function setDefaultMetadata(string memory _newUri) public {
-    require(msg.sender == beneficiary);
+  function setDefaultMetadata(string memory _newUri) public onlyAdmin {
     //defaultMetadata = _newUri;
     // _setBaseURI(_newUri);
   }
@@ -127,4 +160,19 @@ contract ActionNFT is ERC721 {
   receive() external payable {}
 
   fallback() external payable {}
+
+  /* Modifiers */
+  modifier onlyAdmin() {
+    require(msg.sender == beneficiary);
+    _;
+  }
+  modifier saleEnded() {
+    require(canMint == false);
+    _;
+  }
+  modifier canMintQuantity(uint256 _quantity) {
+    require(canMint == true, 'Minting period over');
+    require(totalSupply() + _quantity < mintCap, 'Insufficient Quantity');
+    _;
+  }
 }

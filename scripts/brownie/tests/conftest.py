@@ -8,9 +8,11 @@ def isolate(fn_isolation):
     # https://eth-brownie.readthedocs.io/en/v1.10.3/tests-pytest-intro.html#isolation-fixtures
     pass
 
+
 @pytest.fixture(scope="function")
 def alice(accounts):
     return accounts[0]
+
 
 @pytest.fixture(scope="function")
 def bob(accounts):
@@ -19,27 +21,40 @@ def bob(accounts):
 
 @pytest.fixture(scope="function")
 def nft(alice):
-    return ActionNFT.deploy(alice, 10 ** 16, {'from': accounts[0]})
+    return ActionNFT.deploy(alice, 10 ** 16, {"from": accounts[0]})
+
 
 @pytest.fixture(scope="function")
 def mint(nft, bob):
-    nft.mintCommon({'from': bob, 'value': nft.commonPrice()})
+    nft.mintCommon({"from": bob, "value": nft.commonPrice()})
     return nft
 
+
+@pytest.fixture(scope="function")
+def victory(mint, alice):
+    mint.signResolution(True, {"from": alice})
+    return mint
+
+
+@pytest.fixture(scope="function")
+def defeat(mint, alice):
+    mint.signResolution(False, {"from": alice})
+    return mint
 
 
 @pytest.fixture(scope="function")
 def nft_rare(alice):
-    return ActionNFTRare.deploy(alice, 2 * 10 ** 16, {'from': accounts[0]})
+    return ActionNFTRare.deploy(alice, 2 * 10 ** 16, {"from": accounts[0]})
 
 
 @pytest.fixture(scope="function")
 def bids(nft_rare):
     for i in range(10):
-        nft_rare.bidRare({'from': accounts[i], 'value': nft_rare.bidPrice() * (i+1)})
+        nft_rare.bidRare({"from": accounts[i], "value": nft_rare.bidPrice() * (i + 1)})
     return nft_rare
+
 
 @pytest.fixture(scope="function")
 def ended(bids, alice):
-    bids.setAuctionEnded({'from': alice})
+    bids.setAuctionEnded({"from": alice})
     return bids
