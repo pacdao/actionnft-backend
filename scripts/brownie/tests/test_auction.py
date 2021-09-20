@@ -29,6 +29,41 @@ def test_silver_to_gold(bids):
     bids.bidRare({"from": silver, "value": gold_val_diff + bids.bidUnits()})
     assert bids.topBidders(0)[1] == silver
 
+def test_no_dupes_in_top_5(bids):
+    silver = bids.topBidders(1)[1]
+    gold_val_diff = bids.topBidders(0)[0] - bids.topBidders(1)[0]
+    bids.bidRare({"from": silver, "value": gold_val_diff + bids.bidUnits()})
+    tallies = []
+    for i in range(5):
+        assert bids.topBidders(i)[1] not in tallies
+        tallies.append(bids.topBidders(i)[1])
+
+
+def test_top_5_keeps_5(bids):
+    silver = bids.topBidders(1)[1]
+    gold_val_diff = bids.topBidders(0)[0] - bids.topBidders(1)[0]
+    bids.bidRare({"from": silver, "value": gold_val_diff + bids.bidUnits()})
+    for i in range(5):
+        assert bids.topBidders(1) != ZERO_ADDRESS
+
+
+def test_top_5_values_preserve(bids):
+    run_tot = 0
+    for i in range(5):
+        run_tot += bids.topBidders(i)[0]
+
+    silver = bids.topBidders(1)[1]
+    gold_val_diff = bids.topBidders(0)[0] - bids.topBidders(1)[0]
+    bids.bidRare({"from": silver, "value": gold_val_diff + bids.bidUnits()})
+
+    final_run_tot = 0
+    for i in range(5):
+        final_run_tot += bids.topBidders(i)[0]
+    assert 0
+    assert final_run_tot == run_tot + gold_val_diff + bids.bidUnits()
+
+
+
 
 def test_cannot_bid_after_auction_ends(bids, alice):
     bids.setAuctionEnded({"from": alice})

@@ -41,11 +41,35 @@ contract ActionNFTRare is ERC721Enumerable {
     require(msg.value / bidUnits * bidUnits == msg.value, "Bid units");
     bids[msg.sender] += msg.value;
     lastBidTime = block.timestamp;
-    updateHighestBidder(msg.sender, bids[msg.sender]);
 
-    withdrawableBalance[msg.sender] += msg.value / 10 * 9;
+    if(isTopBidder(msg.sender)) {
+        reshuffleTopBidder(msg.sender, bids[msg.sender]);
+    } else  {
+    	updateHighestBidder(msg.sender, bids[msg.sender]);
+    }
+    withdrawableBalance[msg.sender] += msg.value;
    }
 
+  function reshuffleTopBidder(address addr, uint256 currentValue) internal {
+	uint256 _i = 0;
+	for(_i; _i < 5; _i++) {
+		if (topBidders[_i].addr == addr) {
+			break;
+		}
+	}
+	uint256 _j = 0;
+	for(_j; _j < 5; _j++) {
+		if(topBidders[_j].balance < currentValue) {
+			break;
+		}
+	}
+	for(_i; _i > _j; _i--) {
+		topBidders[_i].addr = topBidders[_i-1].addr;
+		topBidders[_i].balance = topBidders[_i-1].balance;
+	}
+	topBidders[_j].addr = addr;
+	topBidders[_j].balance = currentValue;
+  }
 
   function updateHighestBidder(address addr, uint256 currentValue) internal {
     uint256 i = 0;
