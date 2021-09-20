@@ -9,10 +9,11 @@ contract ActionNFTRare is ERC721Enumerable {
   address payable private beneficiary;
 
   /* Rare NFT */
-  uint256 public bidPrice;
+  uint256 public bidUnits;
   uint256 public lastBidTime;
 
   mapping(address => uint256) public bids;
+  mapping(address => uint256) public withdrawableBalance;
   struct TopBid {
     uint256 balance;
     address addr;
@@ -21,15 +22,14 @@ contract ActionNFTRare is ERC721Enumerable {
 
   bool public auctionEnded = false;
   uint256 public auctionEndTime;
+  uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
-  /* Accounting Data */
-  uint256 public treasuryBalance;
 
-  constructor(address payable _beneficiary, uint256 _bidPrice)
+  constructor(address payable _beneficiary, uint256 _bidUnits)
     ERC721('PACDAO ACTION NFT RARE', 'PAC-A1-RARE')
   {
     beneficiary = _beneficiary;
-    bidPrice = _bidPrice;
+    bidUnits = _bidUnits;
 
     // _setBaseURI('ipfs://QmcnEZQiGVzPonWS2MENbdY8DkwhWcCW7YBQNk5yHYF112');
   }
@@ -37,13 +37,15 @@ contract ActionNFTRare is ERC721Enumerable {
   /* Bid */
 
   function bidRare() public payable {
-    require(auctionEnded == false);
+    require(auctionEnded == false, "Auction over");
+    require(msg.value / bidUnits * bidUnits == msg.value, "Bid units");
     bids[msg.sender] += msg.value;
     lastBidTime = block.timestamp;
     updateHighestBidder(msg.sender, bids[msg.sender]);
 
-    //store_withdrawable(msg.sender, msg.value);
-  }
+    withdrawableBalance[msg.sender] += msg.value / 10 * 9;
+   }
+
 
   function updateHighestBidder(address addr, uint256 currentValue) internal {
     uint256 i = 0;
@@ -76,20 +78,20 @@ contract ActionNFTRare is ERC721Enumerable {
 
   /* Withdraw Functions */
   function withdraw() public {
-    require(auctionEnded == true);
-    require(isTopBidder(msg.sender) == false);
-    // block.timestamp could be tampered with by node
-    require(block.timestamp < auctionEndTime + (60 * 60 * 24 * 30));
+    require(auctionEnded == true, "Auction not ended");
+    require(block.timestamp <= auctionEndTime + withdrawWindow, "Withdraw window ended");
+    require(isTopBidder(msg.sender) == false, "Winners cannot withdraw");
 
-    //	uint256 _val = withdrawableBalance[msg.sender];
+    uint256 _val = withdrawableBalance[msg.sender];
 
-    // msg.sender.transfer((bids[msg.sender]));
-    //		withdrawableBalance[msg.sender] = 0;
+    withdrawableBalance[msg.sender] = 0;
+    payable(msg.sender).transfer(_val);
   }
 
-  function withdraw_dao() public {
-    beneficiary.transfer(treasuryBalance);
-    treasuryBalance = 0;
+  function withdrawTreasury() public {
+    require(auctionEnded == true, "Auction ongoing");
+    require(block.timestamp > auctionEndTime + withdrawWindow, "Withdraw window");
+    beneficiary.transfer(address(this).balance);
   }
 
   /* Admin Functions */
@@ -117,6 +119,8 @@ contract ActionNFTRare is ERC721Enumerable {
       _safeMint(topBidders[_i].addr, _i);
     }
   }
+
+
 
   /* Fallback Functions */
   receive() external payable {}

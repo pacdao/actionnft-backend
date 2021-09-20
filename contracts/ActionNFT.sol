@@ -23,7 +23,6 @@ contract ActionNFT is ERC721Enumerable {
   uint256 public mintCap = 3000;
 
   /* Withdraw Data */
-  bool public isWithdrawPeriod = false;
   uint256 public adminClaimTime;
   uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
@@ -45,7 +44,7 @@ contract ActionNFT is ERC721Enumerable {
 
   /* Payable Functions */
   function mintCommon() public payable canMintQuantity(1) {
-    require(msg.value >= commonPrice);
+    require(msg.value >= commonPrice, "Underpriced");
     _processMint();
     commonPrice = nextPrice(commonPrice);
     store_withdrawable(msg.sender, msg.value);
@@ -58,7 +57,7 @@ contract ActionNFT is ERC721Enumerable {
     canMintQuantity(_mint_count)
   {
     (uint256 _expectedTotal, uint256 _expectedFinal) = getCostMany(_mint_count);
-    require(msg.value >= _expectedTotal);
+    require(msg.value >= _expectedTotal, "Underpriced");
     for (uint256 _i = 0; _i < _mint_count; _i++) {
       _processMint();
     }
@@ -94,13 +93,15 @@ contract ActionNFT is ERC721Enumerable {
   /* Withdraw Functions */
 
   function withdrawTreasury() public saleEnded {
-    require(block.timestamp >= adminClaimTime);
+    require(block.timestamp >= adminClaimTime, "Admin cannot claim");
 
     beneficiary.transfer(address(this).balance);
   }
 
   function refundAll() public saleEnded {
-    require(originalMintCount[msg.sender] >= balanceOf(msg.sender));
+    require(block.timestamp < adminClaimTime, "Withdraw Period Ended");
+    require(balanceOf(msg.sender) >= originalMintCount[msg.sender], "Must have original");
+    require(withdrawableBalance[msg.sender] > 0, "No balance to withdraw");
 
     uint256 _burnCount = originalMintCount[msg.sender];
     uint256[] memory _ownedTokens = new uint256[](_burnCount);
@@ -130,7 +131,6 @@ contract ActionNFT is ERC721Enumerable {
       // Floor Vote Unsuccessful
     } else {
       // Withdraw period is active
-      isWithdrawPeriod = true;
       adminClaimTime = block.timestamp + withdrawWindow;
     }
   }
@@ -162,7 +162,7 @@ contract ActionNFT is ERC721Enumerable {
     _;
   }
   modifier saleEnded() {
-    require(canMint == false);
+    require(canMint == false, "Sale ongoing");
     _;
   }
   modifier canMintQuantity(uint256 _quantity) {

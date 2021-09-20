@@ -13,7 +13,7 @@ def test_can_buy_common_overpriced(nft, bob):
 
 
 def test_cannot_buy_common_underpriced(nft, bob):
-    with brownie.reverts():
+    with brownie.reverts("Underpriced"):
         nft.mintCommon({"from": bob, "value": nft.commonPrice() - 1})
 
 
@@ -62,7 +62,7 @@ def test_mint_counter_correct_multimint(nft, bob):
 def test_mint_many_cannot_underpay(nft, bob):
     quantity = 5
     many_price = nft.getCostMany(quantity)[0]
-    with brownie.reverts():
+    with brownie.reverts("Underpriced"):
         nft.mintMany(quantity, {'from': bob, 'value': many_price-1})
 
 def test_mint_many_price_advances_as_reported(nft, bob):
@@ -89,6 +89,26 @@ def test_mint_many_equivalent_to_several_single(nft, bob, chain):
     assert nft.balanceOf(bob) == quantity
     assert paid == many_price
 
+def test_cannot_mint_after_victory(victory, bob):
+    with brownie.reverts("Minting period over"):
+        victory.mintCommon({'from': bob, 'value': victory.commonPrice()})
+
+def test_cannot_mint_many_after_victory(victory, bob):
+    with brownie.reverts("Minting period over"):
+        victory.mintMany(5, {'from': bob, 'value': victory.getCostMany(5)[0]})
+
+def test_cannot_mint_after_defeat(defeat, bob):
+    with brownie.reverts("Minting period over"):
+        defeat.mintCommon({'from': bob, 'value': defeat.commonPrice()})
+
+def test_cannot_mint_many_after_defeat(defeat, bob):
+    with brownie.reverts("Minting period over"):
+        defeat.mintMany(5, {'from': bob, 'value': defeat.getCostMany(5)[0]})
+
+
+
+
+# At Limit
 
 def test_at_limit(at_limit, alice):
     assert at_limit.totalSupply() == at_limit.mintCap()

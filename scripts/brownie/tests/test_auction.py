@@ -4,7 +4,7 @@ from brownie import *
 
 
 def test_initial_bid_updates(nft_rare, bob):
-    nft_rare.bidRare({"from": bob, "value": nft_rare.bidPrice()})
+    nft_rare.bidRare({"from": bob, "value": nft_rare.bidUnits()})
     assert nft_rare.topBidders(0)[1] == bob
 
 
@@ -26,7 +26,7 @@ def test_top_5_as_expected(bids):
 def test_silver_to_gold(bids):
     silver = bids.topBidders(1)[1]
     gold_val_diff = bids.topBidders(0)[0] - bids.topBidders(1)[0]
-    bids.bidRare({"from": silver, "value": gold_val_diff + 1})
+    bids.bidRare({"from": silver, "value": gold_val_diff + bids.bidUnits()})
     assert bids.topBidders(0)[1] == silver
 
 
@@ -77,7 +77,7 @@ def test_can_increase_bid(bids):
     lowest = bids.topBidders(0)[0]
     account = accounts[3]
     my_bid = bids.bids(account)
-    bids.bidRare({'from': account, 'value': (lowest - my_bid) + 1}) 
+    bids.bidRare({'from': account, 'value': (lowest - my_bid) + bids.bidUnits()}) 
     assert bids.topBidders(0)[1] == account 
 
 def test_tie_does_not_supplant(bids):
@@ -100,4 +100,9 @@ def test_bid_value_updates(bids):
     account = accounts[2]
     my_bid = bids.bids(account)
     lowest = bids.topBidders(4)[0]
-    bids.bidRare({'from': account, 'value': (lowest - my_bid)/2})
+    bids.bidRare({'from': account, 'value': (lowest - my_bid) - bids.bidUnits()})
+
+def test_bid_units(bids):
+    account = accounts[3]
+    with brownie.reverts("Bid units"):
+        bids.bidRare({'from': account, 'value': 1})
