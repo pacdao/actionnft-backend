@@ -14,11 +14,11 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   img: {
-    width: "100px",
-    marginTop: "1rem",
+    width: "50px",
+    marginTop: "0.5rem",
     [theme.breakpoints.up("md")]: {
-      width: "200px",
-      marginTop: "2rem",
+      width: "100px",
+      marginTop: "1rem",
     },
   },
 }));
@@ -28,8 +28,8 @@ const Header = () => {
   return (
     <AppBar elevation={0} position="static" className={classes.appBar}>
       <a href="https://www.pac.xyz/" target="_blank" rel="noreferrer">
-        <img alt="PAC Crypto Activism" src={logo} className={classes.img} />
-      </a>
+          <img alt="PAC Crypto Activism" src={logo} className={classes.img} />
+        </a>
     </AppBar>
   );
 };
