@@ -106,6 +106,9 @@ def test_cannot_mint_many_after_defeat(defeat, bob):
         defeat.mintMany(5, {'from': bob, 'value': defeat.getCostMany(5)[0]})
 
 
+def test_only_admin_can_sign(mint, bob):
+    with brownie.reverts("Only Admin"):
+        mint.signResolution(True, {'from': bob})
 
 
 # At Limit

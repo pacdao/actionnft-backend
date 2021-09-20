@@ -119,7 +119,7 @@ contract ActionNFT is ERC721Enumerable {
   }
 
   /* Admin Functions */
-  function signResolution(bool _resolution) public {
+  function signResolution(bool _resolution) public onlyAdmin {
     canMint = false;
 
     // Floor Vote Successful
@@ -157,7 +157,7 @@ contract ActionNFT is ERC721Enumerable {
 
   /* Modifiers */
   modifier onlyAdmin() {
-    require(msg.sender == beneficiary);
+    require(msg.sender == beneficiary, "Only Admin");
     _;
   }
   modifier saleEnded() {
