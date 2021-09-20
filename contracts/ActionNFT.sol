@@ -63,7 +63,7 @@ contract ActionNFT is ERC721Enumerable {
       _processMint();
     }
     originalMintCount[msg.sender] += _mint_count;
-    commonPrice = nextPrice(_expectedFinal);
+    commonPrice = _expectedFinal;
     store_withdrawable(msg.sender, msg.value);
   }
 
@@ -78,11 +78,11 @@ contract ActionNFT is ERC721Enumerable {
     view
     returns (uint256, uint256)
   {
-    uint256 _run_tot = commonPrice;
+    uint256 _run_tot = 0;
     uint256 _cur_val = commonPrice;
     for (uint256 _i = 0; _i < mint_count; _i++) {
-      _cur_val = nextPrice(_cur_val);
       _run_tot = _run_tot + _cur_val;
+      _cur_val = nextPrice(_cur_val);
     }
     return (_run_tot, _cur_val);
   }
