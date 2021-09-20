@@ -18,7 +18,7 @@ def main():
             owner, action_value, {"from": owner}, publish_source=True
         )
         deployed = ActionNFTRare.deploy(
-            owner, 2 * 10 ** 16, {"from": owner}, publish_source=True
+            owner, 1 * 10 ** 16, {"from": owner}, publish_source=True
         )
 
     return deployed
