@@ -59,8 +59,10 @@ contract ActionNFTRare is ERC721Enumerable {
       topBidders[j].addr = topBidders[j - 1].addr;
     }
     /** update the new max element **/
-    topBidders[i].balance = currentValue;
-    topBidders[i].addr = addr;
+    if(i < topBidders.length) {
+            topBidders[i].balance = currentValue;
+            topBidders[i].addr = addr;
+    }
   }
 
   function isTopBidder(address winner) public view returns (bool) {
