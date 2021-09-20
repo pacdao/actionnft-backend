@@ -97,4 +97,11 @@ def test_cannot_pass_limit(at_limit, alice):
     with brownie.reverts('Insufficient Quantity'):
         at_limit.mintCommon({'from': alice, 'value': at_limit.commonPrice()})
 
+def test_cannot_pass_limit_using_multi(at_limit, alice):
+    with brownie.reverts('Insufficient Quantity'):
+        at_limit.mintMany(1, {'from': alice, 'value': at_limit.getCostMany(1)[0]})
+
+
+
+
 

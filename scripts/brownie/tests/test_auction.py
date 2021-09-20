@@ -72,3 +72,32 @@ def test_winners_get_mints(ended):
 def test_losers_get_no_mints(ended):
     for i in range(5):
         assert ended.balanceOf(accounts[i]) == 0
+
+def test_can_increase_bid(bids):
+    lowest = bids.topBidders(0)[0]
+    account = accounts[3]
+    my_bid = bids.bids(account)
+    bids.bidRare({'from': account, 'value': (lowest - my_bid) + 1}) 
+    assert bids.topBidders(0)[1] == account 
+
+def test_tie_does_not_supplant(bids):
+    lowest = bids.topBidders(4)[0]
+    account = accounts[3]
+    my_bid = bids.bids(account)
+    bids.bidRare({'from': account, 'value': (lowest - my_bid) }) 
+    assert bids.topBidders(4)[1] != account
+
+def test_tie_for_first_gets_silver(bids):
+    account = accounts[3]
+
+    my_bid = bids.bids(account)
+    gold, medalist = bids.topBidders(0)
+    bids.bidRare({'from': account, 'value': (gold - my_bid) })
+    assert bids.topBidders(0)[1] == medalist
+    assert bids.topBidders(1)[1] == account
+
+def test_bid_value_updates(bids):
+    account = accounts[2]
+    my_bid = bids.bids(account)
+    lowest = bids.topBidders(4)[0]
+    bids.bidRare({'from': account, 'value': (lowest - my_bid)/2})
