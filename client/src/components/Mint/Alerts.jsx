@@ -26,7 +26,7 @@ const Alerts = ({ status, blockHash, message }) => {
 
         {status === TYPE.error && (
           <Alert severity="error" style={{ backgroundColor: "lightsalmon", marginBottom: "1rem" }}>
-            {message || "Somethings wrong"}
+            {message || "Something's wrong -- are your units .01 ETH?"}
           </Alert>
         )}
       </Grid>

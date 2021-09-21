@@ -18,7 +18,7 @@ import {
 import { useEthersProvider } from "contexts/EthersContext";
 import deploymentMap from "artifacts/deployments/map.json";
 import { TYPE } from "utils";
-import pacImageRare from "assets/rareNFT.png";
+import pacImageRare from "assets/hendlinRare.jpg";
 import ProgressBtn from "components/ProgressBtn";
 import Alerts from "components/Mint/Alerts";
 import { getABI } from "pages/main";
@@ -26,7 +26,7 @@ import { abbrAddress } from "utils";
 import useStyles from "./useStyles";
 import { stateReducer } from "./utils";
 
-const DEPLOYMENT_MAP_ADDRESS = "dev";
+const DEPLOYMENT_MAP_ADDRESS = "4";
 
 const address = deploymentMap[DEPLOYMENT_MAP_ADDRESS]["ActionNFTRare"][0];
 
@@ -140,7 +140,7 @@ const MintRareComp = () => {
         <Grid container justifyContent="center" alignItems="stretch" style={{ margin: "16px 0" }}>
           <TextField
             className={classes.textfield}
-            label="Your Bid"
+            label="Your Bid (units of .01)"
             variant="outlined"
             onChange={({ target: { value } }) => {
               dispatchSuccess({ bidPrice: value });
@@ -185,7 +185,7 @@ const MintRareComp = () => {
                   })}
                 </TableBody>
                 <caption>
-                  *The top five bidders will get to take home a copy of this rare artwork. All else can claim a 90%
+                  *The top five bidders will get to take home a copy of this rare artwork. All else can claim a 100%
                   refund within 30 days of auction end.
                   <br />
                   <Button
