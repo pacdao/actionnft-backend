@@ -24,14 +24,13 @@ contract ActionNFTRare is ERC721Enumerable {
   uint256 public auctionEndTime;
   uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
-
+  string public rareUrl = 'ipfs://QmTfWFpYVd95X4xfbyWU11VXK2U5KeWdXpFxoDHLVMVvN9';
   constructor(address payable _beneficiary, uint256 _bidUnits)
     ERC721('PACDAO ACTION NFT RARE', 'PAC-A1-RARE')
   {
     beneficiary = _beneficiary;
     bidUnits = _bidUnits;
 
-    // _setBaseURI('ipfs://QmcnEZQiGVzPonWS2MENbdY8DkwhWcCW7YBQNk5yHYF112');
   }
 
   /* Bid */
@@ -112,27 +111,30 @@ contract ActionNFTRare is ERC721Enumerable {
     payable(msg.sender).transfer(_val);
   }
 
+
+  function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+	return(rareUrl);
+  }
+
+
+  /* Admin Functions */
+
   function withdrawTreasury() public {
     require(auctionEnded == true, "Auction ongoing");
     require(block.timestamp > auctionEndTime + withdrawWindow, "Withdraw window");
     beneficiary.transfer(address(this).balance);
   }
 
-  /* Admin Functions */
+
   function updateBeneficiary(address payable _newBeneficiary) public {
     require(msg.sender == beneficiary);
     beneficiary = _newBeneficiary;
   }
 
-  function setTokenUri(uint256 _tokenId, string memory _newUri) public {
+  function setTokenUri(string memory _newUri) public {
     require(msg.sender == beneficiary);
-    // _setTokenURI(_tokenId, _newUri);
-  }
-
-  function setDefaultMetadata(string memory _newUri) public {
-    require(msg.sender == beneficiary);
-    //defaultMetadata = _newUri;
-    // _setBaseURI(_newUri);
+    rareUrl = _newUri;
   }
 
   function setAuctionEnded() public {

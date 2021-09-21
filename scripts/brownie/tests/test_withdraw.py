@@ -2,8 +2,8 @@ import brownie
 import pytest
 from brownie import *
 
-
 # Common Contract
+
 
 def test_admin_withdrawal_on_victory(victory, alice):
     contract_balance = victory.balance()
@@ -18,11 +18,13 @@ def test_admin_cannot_immediately_withdraw_on_defeat(defeat, alice):
     with brownie.reverts():
         defeat.withdrawTreasury({"from": alice})
 
+
 def test_admin_cannot_withdraw_during_sale_period(mint, alice):
     init_balance = alice.balance()
     with brownie.reverts():
-        mint.withdrawTreasury({'from': alice})
+        mint.withdrawTreasury({"from": alice})
     assert alice.balance() == init_balance
+
 
 def test_admin_can_withdraw_after_withdraw_period(defeat, alice):
     contract_balance = defeat.balance()
@@ -109,65 +111,68 @@ def test_can_transfer_at_limit(at_limit, alice, bob):
     alice_init = at_limit.balanceOf(alice)
     bob_init = at_limit.balanceOf(bob)
     alice_token = at_limit.tokenOfOwnerByIndex(alice, 0)
-    at_limit.transferFrom(alice, bob, alice_token, {'from': alice})
-    assert at_limit.balanceOf(alice) == alice_init -1
-    assert at_limit.balanceOf(bob) == bob_init +1
+    at_limit.transferFrom(alice, bob, alice_token, {"from": alice})
+    assert at_limit.balanceOf(alice) == alice_init - 1
+    assert at_limit.balanceOf(bob) == bob_init + 1
     assert at_limit.ownerOf(alice_token) == bob
+
 
 def test_withdraw_after_transfer_receiver(mint, alice, bob):
     at_limit = mint
     init_bal = at_limit.balanceOf(bob)
-    at_limit.mintMany(5, {'from': alice, 'value': at_limit.getCostMany(5)[0]})
+    at_limit.mintMany(5, {"from": alice, "value": at_limit.getCostMany(5)[0]})
     at_limit.signResolution(False, {"from": alice})
     alice_init = at_limit.balanceOf(alice)
     bob_init = at_limit.balanceOf(bob)
     bob_balance = bob.balance()
 
     alice_token = at_limit.tokenOfOwnerByIndex(alice, 0)
-    at_limit.transferFrom(alice, bob, alice_token, {'from': alice})
+    at_limit.transferFrom(alice, bob, alice_token, {"from": alice})
 
-    at_limit.refundAll({'from': bob})
-
+    at_limit.refundAll({"from": bob})
 
     assert init_bal == at_limit.balanceOf(bob)
     assert bob_balance < bob.balance()
+
 
 def test_withdraw_after_transfer_sender_fails(at_limit, alice, bob):
     at_limit.signResolution(False, {"from": alice})
     alice_init = at_limit.balanceOf(alice)
     bob_init = at_limit.balanceOf(bob)
     alice_token = at_limit.tokenOfOwnerByIndex(alice, 0)
-    at_limit.transferFrom(alice, bob, alice_token, {'from': alice})
+    at_limit.transferFrom(alice, bob, alice_token, {"from": alice})
 
     with brownie.reverts("Must have original"):
-        at_limit.refundAll({'from': alice})
+        at_limit.refundAll({"from": alice})
 
 
 def test_cannot_withdraw_after_admin_window(mint, alice):
-    mint.signResolution(False, {'from': alice})
+    mint.signResolution(False, {"from": alice})
     chain.mine(timedelta=mint.withdrawWindow())
     with brownie.reverts("Withdraw Period Ended"):
-        mint.refundAll({'from': alice})
+        mint.refundAll({"from": alice})
 
 
 def test_user_cannot_withdraw_early(bids, alice):
     init_bal = alice.balance()
     with brownie.reverts("Auction not ended"):
-        bids.withdraw({'from': alice})
+        bids.withdraw({"from": alice})
     assert init_bal == alice.balance()
 
+
 def test_user_can_withdraw_after_auction(ended, alice):
-    
+
     init_bal = alice.balance()
     stored_val = ended.withdrawableBalance(alice)
-    ended.withdraw({'from': alice})
+    ended.withdraw({"from": alice})
     assert init_bal < alice.balance()
     assert init_bal + stored_val == alice.balance()
 
+
 def test_withdraw_updates_balance(ended, alice):
     init_bal = alice.balance()
-    ended.withdraw({'from': alice})
-    assert ended.withdrawableBalance(alice) == 0 
+    ended.withdraw({"from": alice})
+    assert ended.withdrawableBalance(alice) == 0
 
 
 def test_winner_cannot_withdraw_after_auction(ended, accounts):
@@ -175,39 +180,46 @@ def test_winner_cannot_withdraw_after_auction(ended, accounts):
     assert ended.isTopBidder(account) == True
     init = account.balance()
     with brownie.reverts("Winners cannot withdraw"):
-        ended.withdraw({'from': account})
+        ended.withdraw({"from": account})
     assert init == account.balance()
+
 
 def test_user_cannot_withdraw_late(ended, alice):
     init = alice.balance()
     chain.mine(timedelta=ended.withdrawWindow() + 1)
     with brownie.reverts("Withdraw window ended"):
-        ended.withdraw({'from': alice})
+        ended.withdraw({"from": alice})
     assert init == alice.balance()
+
 
 def test_admin_cannot_withdraw_early(bids, alice):
     init = alice.balance()
     with brownie.reverts("Auction ongoing"):
-        bids.withdrawTreasury({'from': alice})
+        bids.withdrawTreasury({"from": alice})
     assert init == alice.balance()
+
 
 def test_admin_cannot_withdraw_after_auction(ended, alice):
     init = alice.balance()
     with brownie.reverts("Withdraw window"):
-        ended.withdrawTreasury({'from': alice})
+        ended.withdrawTreasury({"from": alice})
     assert init == alice.balance()
+
 
 def test_admin_can_withdraw_late(ended, alice):
     init = alice.balance()
     chain.mine(timedelta=ended.withdrawWindow() + 1)
-    ended.withdrawTreasury({'from': alice})
+    ended.withdrawTreasury({"from": alice})
     assert init < alice.balance()
+
 
 def test_withdraw_drains_contract(ended, alice):
     init = alice.balance()
     chain.mine(timedelta=ended.withdrawWindow() + 1)
-    ended.withdrawTreasury({'from': alice})
+    ended.withdrawTreasury({"from": alice})
     assert ended.balance() == 0
+
+
 # liWthdraw Window
 
 # liWthdraw Window
@@ -218,5 +230,3 @@ def test_withdraw_drains_contract(ended, alice):
 #    nft.mintCommon({'from': bob, 'value': nft.commonPrice()})
 
 #    assert nft.treasuryBalance() > 0
-
-

@@ -25,6 +25,8 @@ contract ActionNFT is ERC721Enumerable {
   uint256 public adminClaimTime;
   uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
+  string public commonUrl = 'ipfs://QmdB2bYEUdiSWjaFjcvYxwHAFE8fAZJjiiUdSSL9SSnNdi';
+
   constructor(address payable _beneficiary, uint256 _minPrice)
     public
     ERC721('PACDAO ACTION', 'PAC-A1')
@@ -118,6 +120,14 @@ contract ActionNFT is ERC721Enumerable {
     payable(msg.sender).transfer(_val);
   }
 
+
+  function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+	return(commonUrl);
+  }
+
+
+
   /* Admin Functions */
   function signResolution(bool _resolution) public onlyAdmin {
     canMint = false;
@@ -138,16 +148,11 @@ contract ActionNFT is ERC721Enumerable {
     beneficiary = _newBeneficiary;
   }
 
-  function setTokenUri(uint256 _tokenId, string memory _newUri)
+  function setTokenUri(string memory _newUri)
     public
     onlyAdmin
   {
-    // _setTokenURI(_tokenId, _newUri);
-  }
-
-  function setDefaultMetadata(string memory _newUri) public onlyAdmin {
-    //defaultMetadata = _newUri;
-    // _setBaseURI(_newUri);
+    commonUrl = _newUri;
   }
 
   /* Fallback Functions */

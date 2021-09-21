@@ -21,6 +21,7 @@ def bob(accounts):
 
 # Common NFT
 
+
 @pytest.fixture(scope="function")
 def nft(alice):
     return ActionNFT.deploy(alice, 10 ** 16, {"from": accounts[0]})
@@ -46,6 +47,7 @@ def defeat(mint, alice):
 
 # Rare NFT
 
+
 @pytest.fixture(scope="function")
 def nft_rare(alice):
     return ActionNFTRare.deploy(alice, 2 * 10 ** 16, {"from": accounts[0]})
@@ -63,6 +65,7 @@ def ended(bids, alice):
     bids.setAuctionEnded({"from": alice})
     return bids
 
+
 @pytest.fixture(scope="function")
 def at_limit(nft, accounts):
     accts = 10
@@ -73,7 +76,7 @@ def at_limit(nft, accounts):
         val = cap // batches
         remaining = nft.mintCap() - nft.totalSupply()
         if val >= remaining:
-            val = remaining 
-        nft.mintMany(val, {'from': accounts[user], 'value': nft.getCostMany(val)[0]})
+            val = remaining
+        nft.mintMany(val, {"from": accounts[user], "value": nft.getCostMany(val)[0]})
     assert nft.totalSupply() == nft.mintCap()
     return nft

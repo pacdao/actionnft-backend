@@ -29,6 +29,7 @@ def test_silver_to_gold(bids):
     bids.bidRare({"from": silver, "value": gold_val_diff + bids.bidUnits()})
     assert bids.topBidders(0)[1] == silver
 
+
 def test_no_dupes_in_top_5(bids):
     silver = bids.topBidders(1)[1]
     gold_val_diff = bids.topBidders(0)[0] - bids.topBidders(1)[0]
@@ -59,10 +60,7 @@ def test_top_5_values_preserve(bids):
     final_run_tot = 0
     for i in range(5):
         final_run_tot += bids.topBidders(i)[0]
-    assert 0
     assert final_run_tot == run_tot + gold_val_diff + bids.bidUnits()
-
-
 
 
 def test_cannot_bid_after_auction_ends(bids, alice):
@@ -108,36 +106,59 @@ def test_losers_get_no_mints(ended):
     for i in range(5):
         assert ended.balanceOf(accounts[i]) == 0
 
+
 def test_can_increase_bid(bids):
     lowest = bids.topBidders(0)[0]
     account = accounts[3]
     my_bid = bids.bids(account)
-    bids.bidRare({'from': account, 'value': (lowest - my_bid) + bids.bidUnits()}) 
-    assert bids.topBidders(0)[1] == account 
+    bids.bidRare({"from": account, "value": (lowest - my_bid) + bids.bidUnits()})
+    assert bids.topBidders(0)[1] == account
+
 
 def test_tie_does_not_supplant(bids):
     lowest = bids.topBidders(4)[0]
     account = accounts[3]
     my_bid = bids.bids(account)
-    bids.bidRare({'from': account, 'value': (lowest - my_bid) }) 
+    bids.bidRare({"from": account, "value": (lowest - my_bid)})
     assert bids.topBidders(4)[1] != account
+
 
 def test_tie_for_first_gets_silver(bids):
     account = accounts[3]
 
     my_bid = bids.bids(account)
     gold, medalist = bids.topBidders(0)
-    bids.bidRare({'from': account, 'value': (gold - my_bid) })
+    bids.bidRare({"from": account, "value": (gold - my_bid)})
     assert bids.topBidders(0)[1] == medalist
     assert bids.topBidders(1)[1] == account
+
 
 def test_bid_value_updates(bids):
     account = accounts[2]
     my_bid = bids.bids(account)
     lowest = bids.topBidders(4)[0]
-    bids.bidRare({'from': account, 'value': (lowest - my_bid) - bids.bidUnits()})
+    bids.bidRare({"from": account, "value": (lowest - my_bid) - bids.bidUnits()})
+
 
 def test_bid_units(bids):
     account = accounts[3]
     with brownie.reverts("Bid units"):
-        bids.bidRare({'from': account, 'value': 1})
+        bids.bidRare({"from": account, "value": 1})
+
+
+def test_rare_token_uri_correct(ended):
+    for i in range(5):
+        assert (
+            ended.tokenURI(i) == "ipfs://QmTfWFpYVd95X4xfbyWU11VXK2U5KeWdXpFxoDHLVMVvN9"
+        )
+
+
+def test_zero_value_leaderboard_doesnt_skip(bids):
+    current_range = []
+    for i in range(5):
+        current_range.append(bids.topBidders(i)[1])
+
+    for a in current_range:
+        bids.bidRare({"from": a, "value": 0})
+        for i in range(5):
+            assert bids.topBidders(i)[1] == current_range[i]
