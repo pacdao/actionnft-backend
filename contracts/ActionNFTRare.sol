@@ -38,6 +38,7 @@ contract ActionNFTRare is ERC721Enumerable {
   function bidRare() public payable {
     require(auctionEnded == false, "Auction over");
     require(msg.value / bidUnits * bidUnits == msg.value, "Bid units");
+    require(msg.value > 0, 'Zero bid');
     bids[msg.sender] += msg.value;
     lastBidTime = block.timestamp;
 
@@ -50,24 +51,25 @@ contract ActionNFTRare is ERC721Enumerable {
    }
 
   function reshuffleTopBidder(address addr, uint256 currentValue) internal {
-	uint256 _i = 0;
-	for(_i; _i < 5; _i++) {
-		if (topBidders[_i].addr == addr) {
-			break;
-		}
-	}
-	uint256 _j = 0;
-	for(_j; _j < 5; _j++) {
-		if(topBidders[_j].balance < currentValue) {
-			break;
-		}
-	}
-	for(_i; _i > _j; _i--) {
-		topBidders[_i].addr = topBidders[_i-1].addr;
-		topBidders[_i].balance = topBidders[_i-1].balance;
-	}
-	topBidders[_j].addr = addr;
-	topBidders[_j].balance = currentValue;
+    uint256 _i = 0;
+    for (_i; _i < 5; _i++) {
+      if (topBidders[_i].addr == addr) {
+        break;
+      }
+    }
+    uint256 _j = _i;
+    for (_j; _j > 0; _j--) {
+      if (topBidders[_j - 1].balance < currentValue) {
+        (topBidders[_j].balance, topBidders[_j - 1].balance) = (
+          topBidders[_j - 1].balance,
+          topBidders[_j].balance
+        );
+        (topBidders[_j].addr, topBidders[_j - 1].addr) = (
+          topBidders[_j - 1].addr,
+          topBidders[_j].addr
+        );
+      }
+    }
   }
 
   function updateHighestBidder(address addr, uint256 currentValue) internal {
