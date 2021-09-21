@@ -38,6 +38,7 @@ contract ActionNFTRare is ERC721Enumerable {
   function bidRare() public payable {
     require(auctionEnded == false, "Auction over");
     require(msg.value / bidUnits * bidUnits == msg.value, "Bid units");
+    require(msg.value > 0, "No bid value");
     bids[msg.sender] += msg.value;
     lastBidTime = block.timestamp;
 
