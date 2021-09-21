@@ -50,16 +50,17 @@ contract ActionNFTRare is ERC721Enumerable {
     withdrawableBalance[msg.sender] += msg.value;
    }
 
-  function reshuffleTopBidder(address addr, uint256 currentValue) internal {
+   function reshuffleTopBidder(address addr, uint256 currentValue) internal {
     uint256 _i = 0;
     for (_i; _i < 5; _i++) {
       if (topBidders[_i].addr == addr) {
         break;
       }
     }
+    topBidders[_i].balance = currentValue;
     uint256 _j = _i;
     for (_j; _j > 0; _j--) {
-      if (topBidders[_j - 1].balance < currentValue) {
+      if (topBidders[_j - 1].balance < topBidders[_j].balance) {
         (topBidders[_j].balance, topBidders[_j - 1].balance) = (
           topBidders[_j - 1].balance,
           topBidders[_j].balance
@@ -71,6 +72,7 @@ contract ActionNFTRare is ERC721Enumerable {
       }
     }
   }
+
 
   function updateHighestBidder(address addr, uint256 currentValue) internal {
     uint256 i = 0;
