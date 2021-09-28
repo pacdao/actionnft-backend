@@ -121,21 +121,22 @@ def test_only_admin_can_sign(mint, bob):
 # At Limit
 
 
+@pytest.mark.skip_coverage
 def test_at_limit(at_limit, alice):
     assert at_limit.totalSupply() == at_limit.mintCap()
 
 
+@pytest.mark.skip_coverage
 def test_cannot_pass_limit(at_limit, alice):
     with brownie.reverts("Insufficient Quantity"):
         at_limit.mintCommon({"from": alice, "value": at_limit.commonPrice()})
 
 
+@pytest.mark.skip_coverage
 def test_cannot_pass_limit_using_multi(at_limit, alice):
     with brownie.reverts("Insufficient Quantity"):
         at_limit.mintMany(1, {"from": alice, "value": at_limit.getCostMany(1)[0]})
 
 
 def test_token_uri_correct(victory, bob):
-    assert (
-        victory.tokenURI(1) == "ipfs://QmdB2bYEUdiSWjaFjcvYxwHAFE8fAZJjiiUdSSL9SSnNdi"
-    )
+    assert victory.tokenURI(1) == "QmTFMJ17s35Y2fHSomdTh29m8CdBPK8Cv8trXnAWTVJ1hc"

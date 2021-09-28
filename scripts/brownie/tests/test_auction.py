@@ -149,11 +149,11 @@ def test_bid_units(bids):
 def test_rare_token_uri_correct(ended):
     for i in range(5):
         assert (
-            ended.tokenURI(i) == "ipfs://QmTfWFpYVd95X4xfbyWU11VXK2U5KeWdXpFxoDHLVMVvN9"
+            ended.tokenURI(i) == "ipfs://QmZkv5F2dfPKMAR8Dbs6Kqu6v6YiFbvHgXjW6aca4gU4Z3"
         )
 
 
-#def test_zero_value_leaderboard_doesnt_skip(bids):
+# def test_zero_value_leaderboard_doesnt_skip(bids):
 #    current_range = []
 #    for i in range(5):
 #        current_range.append(bids.topBidders(i)[1])
@@ -170,10 +170,17 @@ def test_small_increment_leaderboard_doesnt_skip(bids):
         current_range.append(bids.topBidders(i)[1])
 
     for a in current_range:
-        bids.bidRare({'from': a, 'value': bids.bidUnits()})
+        bids.bidRare({"from": a, "value": bids.bidUnits()})
         for i in range(5):
             assert bids.topBidders(i)[1] == current_range[i]
 
+
 def test_cannot_bid_empty(bids, alice):
     with brownie.reverts("No bid value"):
-        bids.bidRare({'from': alice, 'value': 0})
+        bids.bidRare({"from": alice, "value": 0})
+
+
+def test_mint_on_quiet_auction(nft_rare, alice):
+    nft_rare.bidRare({"from": alice, "value": nft_rare.bidUnits()})
+    nft_rare.setAuctionEnded({"from": alice})
+    assert nft_rare.balanceOf(alice) == 1

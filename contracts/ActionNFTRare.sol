@@ -24,7 +24,7 @@ contract ActionNFTRare is ERC721Enumerable {
   uint256 public auctionEndTime;
   uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
-  string public rareUrl = 'ipfs://QmTfWFpYVd95X4xfbyWU11VXK2U5KeWdXpFxoDHLVMVvN9';
+  string public rareUrl = 'ipfs://QmZkv5F2dfPKMAR8Dbs6Kqu6v6YiFbvHgXjW6aca4gU4Z3';
   constructor(address payable _beneficiary, uint256 _bidUnits)
     ERC721('PACDAO ACTION NFT RARE', 'PAC-A1-RARE')
   {
@@ -146,7 +146,9 @@ contract ActionNFTRare is ERC721Enumerable {
     auctionEnded = true;
     auctionEndTime = block.timestamp;
     for (uint256 _i = 0; _i < topBidders.length; _i++) {
-      _safeMint(topBidders[_i].addr, _i);
+      if(topBidders[_i].addr != address(0)) {
+       _safeMint(topBidders[_i].addr, _i);
+      }
     }
   }
 

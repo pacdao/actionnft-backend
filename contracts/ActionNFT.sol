@@ -25,7 +25,7 @@ contract ActionNFT is ERC721Enumerable {
   uint256 public adminClaimTime;
   uint256 public withdrawWindow = 24 * 60 * 60 * 30;
 
-  string public commonUrl = 'ipfs://QmdB2bYEUdiSWjaFjcvYxwHAFE8fAZJjiiUdSSL9SSnNdi';
+  string public commonUrl = 'ipfs://QmTFMJ17s35Y2fHSomdTh29m8CdBPK8Cv8trXnAWTVJ1hc';
 
   constructor(address payable _beneficiary, uint256 _minPrice)
     public
@@ -34,13 +34,11 @@ contract ActionNFT is ERC721Enumerable {
     beneficiary = _beneficiary;
     commonPrice = _minPrice;
 
-    // _setBaseURI('ipfs://QmcnEZQiGVzPonWS2MENbdY8DkwhWcCW7YBQNk5yHYF112');
   }
 
   function store_withdrawable(address username, uint256 value) internal {
     uint256 _withdraw = (msg.value * 90) / 100;
     withdrawableBalance[msg.sender] += _withdraw;
-    //treasuryBalance = (msg.value - _withdraw);
   }
 
   /* Payable Functions */

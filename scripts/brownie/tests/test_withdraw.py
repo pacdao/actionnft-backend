@@ -106,6 +106,9 @@ def test_cannot_withdraw_after_expiry(ended):
 
 
 # Bonus withdraws from Transfer
+
+
+@pytest.mark.skip_coverage
 def test_can_transfer_at_limit(at_limit, alice, bob):
     at_limit.signResolution(False, {"from": alice})
     alice_init = at_limit.balanceOf(alice)
@@ -135,6 +138,7 @@ def test_withdraw_after_transfer_receiver(mint, alice, bob):
     assert bob_balance < bob.balance()
 
 
+@pytest.mark.skip_coverage
 def test_withdraw_after_transfer_sender_fails(at_limit, alice, bob):
     at_limit.signResolution(False, {"from": alice})
     alice_init = at_limit.balanceOf(alice)
